@@ -21,7 +21,7 @@ export default function PrivacyPolicy() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-foreground mb-4">Information We Don't Collect</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-4">Information We Don&apos;t Collect</h2>
             <p>We want to be clear that we do not:</p>
             <ul className="list-disc pl-6 mt-2 space-y-2">
               <li>Store your uploaded images</li>

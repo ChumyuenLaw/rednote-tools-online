@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { Search, Lightbulb, Bug, DollarSign, Wrench, Handshake, Lock, HelpCircle } from 'lucide-react';
+import { Search, Lightbulb, Bug, Wrench, Handshake, HelpCircle } from 'lucide-react';
 
 export default function Contact() {
   const [formData, setFormData] = useState({
@@ -53,6 +53,7 @@ export default function Contact() {
         title: "Error",
         description: "Failed to send message. Please try again.",
       });
+      console.error(error);
     } finally {
       setIsSubmitting(false);
     }

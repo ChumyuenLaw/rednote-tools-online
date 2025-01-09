@@ -1,4 +1,4 @@
-import { UploadCloud, RefreshCw, X } from 'lucide-react';
+import { UploadCloud, X } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -83,17 +83,17 @@ export function UploadDropzone({ onFileSelect }: UploadDropzoneProps) {
     });
   }, [onFileSelect]);
 
-  const handleReset = useCallback(() => {
-    setPreviews([]);
-    if (document.getElementById('file-upload')) {
-      (document.getElementById('file-upload') as HTMLInputElement).value = '';
-    }
-    onFileSelect([]);
-    // Trigger file input click after a short delay to ensure reset is complete
-    setTimeout(() => {
-      document.getElementById('file-upload')?.click();
-    }, 0);
-  }, [onFileSelect]);
+//   const handleReset = useCallback(() => {
+//     setPreviews([]);
+//     if (document.getElementById('file-upload')) {
+//       (document.getElementById('file-upload') as HTMLInputElement).value = '';
+//     }
+//     onFileSelect([]);
+//     // Trigger file input click after a short delay to ensure reset is complete
+//     setTimeout(() => {
+//       document.getElementById('file-upload')?.click();
+//     }, 0);
+//   }, [onFileSelect]);
 
   return (
     <div
