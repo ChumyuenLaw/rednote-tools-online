@@ -3,6 +3,7 @@ import React, { useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import Image from 'next/image';
 
 interface UploadDropzoneProps {
   onFileSelect: (files: File[]) => void;
@@ -120,13 +121,15 @@ export function UploadDropzone({ onFileSelect }: UploadDropzoneProps) {
                   onMouseEnter={() => setIsHovering(index)}
                   onMouseLeave={() => setIsHovering(null)}
                 >
-                  <img
+                  <Image
                     src={item.preview}
                     alt={`Preview ${index + 1}`}
+                    fill
                     className={cn(
-                      "w-full h-full object-cover transition-transform duration-300",
+                      "object-cover transition-transform duration-300",
                       isHovering === index && "scale-105"
                     )}
+                    unoptimized // Since we're using data URLs
                   />
                   <div 
                     className={cn(
