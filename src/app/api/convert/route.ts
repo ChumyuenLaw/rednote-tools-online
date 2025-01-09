@@ -4,8 +4,24 @@ import sharp from 'sharp';
 // 50MB in bytes
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
+export const config = {
+  api: {
+    bodyParser: false,
+    responseLimit: false,
+  },
+};
+
 export async function POST(req: NextRequest) {
   try {
+    // Check content length
+    const contentLength = parseInt(req.headers.get('content-length') || '0', 10);
+    if (contentLength > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: 'File size exceeds 50MB limit' },
+        { status: 413 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const format = formData.get('format') as string;
@@ -17,11 +33,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check file size
+    // Check file size again after getting the file
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: 'File size exceeds 50MB limit' },
-        { status: 400 }
+        { status: 413 }
       );
     }
 
