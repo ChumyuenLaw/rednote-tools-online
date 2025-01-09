@@ -6,6 +6,11 @@ import { Toaster } from "@/components/ui/toaster";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NODE_ENV === 'development'
+      ? 'http://localhost:3000'
+      : 'https://imageconvertfree.com'
+  ),
   title: 'Free Image Converter - Convert WebP, PNG, JPG, GIF, RAW Online | imageconvertfree.com',
   description: 'Free online image converter. Convert between WebP, PNG, JPG, JPEG, GIF, and RAW formats instantly. No registration, no watermark, no limits. 100% free forever.',
   keywords: ['image converter', 'webp converter', 'png converter', 'jpg converter', 'gif converter', 'raw converter', 'free image converter', 'online image converter'],

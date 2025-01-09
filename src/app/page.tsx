@@ -13,6 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Link from "next/link";
 
 export default function Home() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -151,7 +152,9 @@ export default function Home() {
           <div className="flex justify-between items-center h-16">
             <Logo />
             <div className="flex items-center space-x-6">
-              <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Home</a>
+              <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
+                Home
+              </Link>
               <a href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
               <a href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</a>
               <a 
@@ -363,7 +366,7 @@ export default function Home() {
                   <h3 className="font-semibold text-sm">Product</h3>
                   <ul className="mt-3 space-y-1.5">
                     <li>
-                      <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Image Convert</a>
+                      <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Image Convert</Link>
                     </li>
                   </ul>
                 </div>

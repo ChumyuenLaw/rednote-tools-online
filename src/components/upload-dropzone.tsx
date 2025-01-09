@@ -26,70 +26,64 @@ export function UploadDropzone({ onFileSelect }: UploadDropzoneProps) {
     }
   }, []);
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(false);
+  const handleFiles = useCallback((files: File[]) => {
+    if (previews.length + files.length > MAX_FILES) {
+      toast({
+        variant: "destructive",
+        title: "Too many files",
+        description: `You can only upload up to ${MAX_FILES} images at a time.`
+      });
+      return;
+    }
 
-      const files = Array.from(e.dataTransfer.files).filter(file => 
-        file.type.startsWith('image/')
-      );
-
-      if (files.length > 0) {
-        if (previews.length + files.length > MAX_FILES) {
-          toast({
-            variant: "destructive",
-            title: "Too many files",
-            description: `You can only upload up to ${MAX_FILES} images at a time.`
-          });
-          return;
-        }
-        handleFiles(files);
-      }
-    },
-    [onFileSelect, previews.length, toast]
-  );
-
-  const handleFiles = (files: File[]) => {
-    // Pass files to parent first
+    // First update parent's state
     onFileSelect(files);
 
     // Then update local previews
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviews(prev => [...prev, { file, preview: reader.result as string }]);
-      };
-      reader.readAsDataURL(file);
+    Promise.all(
+      files.map(file => new Promise<{ file: File; preview: string }>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve({ file, preview: reader.result as string });
+        };
+        reader.readAsDataURL(file);
+      }))
+    ).then(newPreviews => {
+      setPreviews(prev => [...prev, ...newPreviews]);
     });
-  };
+  }, [onFileSelect, previews.length, toast]);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files ? Array.from(e.target.files) : [];
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files).filter(file => 
+      file.type.startsWith('image/')
+    );
+
     if (files.length > 0) {
-      if (previews.length + files.length > MAX_FILES) {
-        toast({
-          variant: "destructive",
-          title: "Too many files",
-          description: `You can only upload up to ${MAX_FILES} images at a time.`
-        });
-        return;
-      }
       handleFiles(files);
     }
-  };
+  }, [handleFiles]);
 
-  const handleRemoveFile = (index: number) => {
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    if (files.length > 0) {
+      handleFiles(files);
+    }
+  }, [handleFiles]);
+
+  const handleRemoveFile = useCallback((index: number) => {
     setPreviews(prev => {
       const newPreviews = [...prev];
       newPreviews.splice(index, 1);
       onFileSelect(newPreviews.map(p => p.file));
       return newPreviews;
     });
-  };
+  }, [onFileSelect]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setPreviews([]);
     if (document.getElementById('file-upload')) {
       (document.getElementById('file-upload') as HTMLInputElement).value = '';
@@ -99,7 +93,7 @@ export function UploadDropzone({ onFileSelect }: UploadDropzoneProps) {
     setTimeout(() => {
       document.getElementById('file-upload')?.click();
     }, 0);
-  };
+  }, [onFileSelect]);
 
   return (
     <div
