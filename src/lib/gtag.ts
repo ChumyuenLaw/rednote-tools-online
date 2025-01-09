@@ -1,5 +1,19 @@
 export const GA_TRACKING_ID = process.env.NEXT_PUBLIC_GA_ID || ''
 
+interface GTagEvent {
+  action: string
+  category: string
+  label: string
+  value?: number
+}
+
+interface GTagConfig {
+  page_path?: string
+  event_category?: string
+  event_label?: string
+  value?: number
+}
+
 // https://developers.google.com/analytics/devguides/collection/gtagjs/pages
 export const pageview = (url: string) => {
   if (!GA_TRACKING_ID) return
@@ -9,12 +23,7 @@ export const pageview = (url: string) => {
 }
 
 // https://developers.google.com/analytics/devguides/collection/gtagjs/events
-export const event = ({ action, category, label, value }: {
-  action: string
-  category: string
-  label: string
-  value?: number
-}) => {
+export const event = ({ action, category, label, value }: GTagEvent) => {
   if (!GA_TRACKING_ID) return
   window.gtag('event', action, {
     event_category: category,
@@ -29,7 +38,7 @@ declare global {
     gtag: (
       command: 'config' | 'event',
       targetId: string,
-      config?: Record<string, any>
+      config?: GTagConfig
     ) => void
   }
 } 
