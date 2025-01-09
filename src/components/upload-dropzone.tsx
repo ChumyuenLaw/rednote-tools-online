@@ -173,7 +173,7 @@ export function UploadDropzone({ onFileSelect }: UploadDropzoneProps) {
             <div className="space-y-2">
               <p className="text-lg">Drag and drop your images here, or click to select</p>
               <p className="text-sm text-muted-foreground">
-                Supports WebP, PNG, JPG, JPEG, GIF, and RAW formats (max {MAX_FILES} images)
+                Supports WebP, PNG, JPG, JPEG, GIF, and RAW formats (max {MAX_FILES} images, up to 50MB each)
               </p>
             </div>
           </>
