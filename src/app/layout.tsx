@@ -69,6 +69,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+        <noscript>
+          <iframe 
+            src={`https://www.googletagmanager.com/ns.html?id=${process.env.NEXT_PUBLIC_GTM_ID}`}
+            height="0" 
+            width="0" 
+            style={{display: 'none', visibility: 'hidden'}}
+          />
+        </noscript>
         {children}
         <Toaster />
         <Analytics />
