@@ -127,15 +127,15 @@ export default function Home() {
       window.URL.revokeObjectURL(blobUrl);
 
       toast({
-        title: '下载开始',
-        description: '文件将很快下载完成',
+        title: 'Download Started',
+        description: 'Your file will be downloaded shortly',
       });
     } catch (error) {
       console.error('Download error:', error);
       toast({
         variant: 'destructive',
-        title: '下载失败',
-        description: '请稍后重试',
+        title: 'Download Failed',
+        description: 'Please try again later',
       });
     }
   };
