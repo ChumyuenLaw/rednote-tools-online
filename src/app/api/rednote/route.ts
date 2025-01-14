@@ -26,19 +26,27 @@ export async function POST(request: Request) {
     // First check if the URL is a direct media URL
     if (url.startsWith('http') && (url.includes('.mp4') || url.includes('.jpg') || url.includes('.png'))) {
       console.log('Direct media download:', url);
-      const downloadResponse = await fetch(url);
+      const downloadResponse = await fetch(url, {
+        headers: {
+          'Accept': 'image/*, video/*',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
       
       if (!downloadResponse.ok) {
         throw new Error('Failed to download media content');
       }
 
-      const contentType = downloadResponse.headers.get('content-type') || 'application/octet-stream';
+      const contentType = downloadResponse.headers.get('content-type');
       const blob = await downloadResponse.blob();
+      
+      // Ensure we have the correct content type
+      const finalContentType = contentType || (url.includes('.mp4') ? 'video/mp4' : 'image/jpeg');
       
       return new NextResponse(blob, {
         status: 200,
         headers: {
-          'Content-Type': contentType,
+          'Content-Type': finalContentType,
           'Content-Disposition': `attachment; filename="${url.split('/').pop()}"`,
         },
       });
@@ -68,25 +76,33 @@ export async function POST(request: Request) {
     const mediaUrl = data.data.videourl || data.data.download_image || (data.data.images && data.data.images[0]);
     console.log('Downloading media from:', mediaUrl);
     
-    const downloadResponse = await fetch(mediaUrl);
+    const downloadResponse = await fetch(mediaUrl, {
+      headers: {
+        'Accept': 'image/*, video/*',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
     
     if (!downloadResponse.ok) {
       throw new Error('Failed to download media content');
     }
 
-    const contentType = downloadResponse.headers.get('content-type') || 'application/octet-stream';
+    const contentType = downloadResponse.headers.get('content-type');
     const blob = await downloadResponse.blob();
     
-    // Determine filename from URL or content type
+    // Determine filename and content type based on URL and actual content
     let filename = mediaUrl.split('/').pop() || '';
+    const isVideo = mediaUrl.includes('.mp4') || contentType?.includes('video');
+    const finalContentType = contentType || (isVideo ? 'video/mp4' : 'image/jpeg');
+    
     if (!filename.includes('.')) {
-      filename = `download${contentType.includes('video') ? '.mp4' : '.jpg'}`;
+      filename = `download${isVideo ? '.mp4' : '.jpg'}`;
     }
 
     return new NextResponse(blob, {
       status: 200,
       headers: {
-        'Content-Type': contentType,
+        'Content-Type': finalContentType,
         'Content-Disposition': `attachment; filename="${filename}"`,
       },
     });
