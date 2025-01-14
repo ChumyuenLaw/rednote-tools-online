@@ -23,8 +23,30 @@ export async function POST(request: Request) {
       );
     }
 
+    // First check if the URL is a direct media URL
+    if (url.startsWith('http') && (url.includes('.mp4') || url.includes('.jpg') || url.includes('.png'))) {
+      console.log('Direct media download:', url);
+      const downloadResponse = await fetch(url);
+      
+      if (!downloadResponse.ok) {
+        throw new Error('Failed to download media content');
+      }
+
+      const contentType = downloadResponse.headers.get('content-type') || 'application/octet-stream';
+      const blob = await downloadResponse.blob();
+      
+      return new NextResponse(blob, {
+        status: 200,
+        headers: {
+          'Content-Type': contentType,
+          'Content-Disposition': `attachment; filename="${url.split('/').pop()}"`,
+        },
+      });
+    }
+
+    // If not a direct media URL, process through Rednote API
     const apiUrl = `${API_BASE_URL}/?uid=${API_UID}&my=${API_SECRET}&url=${encodeURIComponent(url)}`;
-    console.log('Requesting URL:', apiUrl);
+    console.log('Requesting Rednote API:', apiUrl);
 
     const response = await fetch(apiUrl);
     
@@ -35,33 +57,40 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
+    console.log('Rednote API response:', data);
 
-    // 如果是视频或图片链接，我们需要代理下载
-    if (data.data?.videourl || data.data?.download_image || (data.data?.images && data.data.images.length > 0)) {
-      const downloadUrl = data.data.videourl || data.data.download_image || data.data.images[0];
-      const downloadResponse = await fetch(downloadUrl);
-      
-      if (!downloadResponse.ok) {
-        throw new Error('Failed to download content');
-      }
-
-      const contentType = downloadResponse.headers.get('content-type') || 'application/octet-stream';
-      const contentDisposition = downloadResponse.headers.get('content-disposition');
-
-      const headers = new Headers();
-      headers.set('Content-Type', contentType);
-      if (contentDisposition) {
-        headers.set('Content-Disposition', contentDisposition);
-      }
-
-      const blob = await downloadResponse.blob();
-      return new NextResponse(blob, {
-        status: 200,
-        headers,
-      });
+    // Return the API response data if no media URLs are present
+    if (!data.data?.videourl && !data.data?.download_image && (!data.data?.images || data.data.images.length === 0)) {
+      return NextResponse.json(data);
     }
 
-    return NextResponse.json(data);
+    // Handle media download
+    const mediaUrl = data.data.videourl || data.data.download_image || (data.data.images && data.data.images[0]);
+    console.log('Downloading media from:', mediaUrl);
+    
+    const downloadResponse = await fetch(mediaUrl);
+    
+    if (!downloadResponse.ok) {
+      throw new Error('Failed to download media content');
+    }
+
+    const contentType = downloadResponse.headers.get('content-type') || 'application/octet-stream';
+    const blob = await downloadResponse.blob();
+    
+    // Determine filename from URL or content type
+    let filename = mediaUrl.split('/').pop() || '';
+    if (!filename.includes('.')) {
+      filename = `download${contentType.includes('video') ? '.mp4' : '.jpg'}`;
+    }
+
+    return new NextResponse(blob, {
+      status: 200,
+      headers: {
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${filename}"`,
+      },
+    });
+
   } catch (error) {
     console.error('Error processing Rednote content:', error);
     return NextResponse.json(
