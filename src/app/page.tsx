@@ -55,8 +55,8 @@ export default function Home() {
         return;
       }
 
-      // If not in cache, fetch from API
-      const response = await fetch('/api/rednote', {
+      // If not in cache, fetch from parse API
+      const response = await fetch('/api/rednote/parse', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,55 +114,34 @@ export default function Home() {
 
   const handleDownload = async (url: string, filename: string) => {
     try {
-      // For video files, use direct download with headers
-      if (url.includes('.mp4')) {
-        const response = await fetch(url, {
-          headers: {
-            'Accept': 'video/*',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Referer': 'https://www.xiaohongshu.com/'
-          }
-        });
+      const response = await fetch('/api/rednote/download', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      });
 
-        if (!response.ok) {
-          throw new Error('Download failed');
-        }
-
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(blobUrl);
-      } else {
-        // For images, use API proxy
-        const response = await fetch('/api/rednote', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ url, download: true }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Download failed');
-        }
-
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(blobUrl);
+      if (!response.ok) {
+        throw new Error('Download failed');
       }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+      
+      // Create a temporary URL for the blob
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      
+      // Append to body, click, and clean up
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
 
       toast({
         title: 'Download Started',
