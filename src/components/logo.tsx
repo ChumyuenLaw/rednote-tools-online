@@ -1,26 +1,15 @@
 import Link from 'next/link';
-import Image from 'next/image';
 
 export function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-      <div className="relative w-8 h-8 md:w-10 md:h-10">
-        <Image
-          src="/favicon-32x32.png"
-          alt="Image Convert Free Logo"
-          fill
-          className="object-contain"
-          priority
-        />
+    <Link href="/" className="flex items-center space-x-2">
+      <div className="relative w-8 h-8">
+        <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-rose-600 rounded-lg transform rotate-6"></div>
+        <div className="absolute inset-0 bg-white rounded-lg flex items-center justify-center">
+          <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-rose-600">R</span>
+        </div>
       </div>
-      <div className="flex flex-col">
-        <span className="text-lg md:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500">
-          ImageConvertFree
-        </span>
-        <span className="text-xs md:text-sm text-muted-foreground">
-          Always Free
-        </span>
-      </div>
+      <span className="font-bold text-xl">Rednote</span>
     </Link>
   );
 } 

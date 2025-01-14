@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { UploadDropzone } from '@/components/upload-dropzone';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { Sparkles, Zap, Lock, Infinity, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { Sparkles, Zap, Lock, Infinity, ChevronDown, ChevronUp, Download, Copy, ExternalLink } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { cn } from '@/lib/utils';
 import {
@@ -13,134 +13,168 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { getRednoteContent, isValidRednoteUrl } from '@/lib/api';
+import { getCache, setCache, generateCacheKey } from '@/lib/cache';
 import Link from "next/link";
+import type { RednoteResponse } from '@/types/rednote';
 
 export default function Home() {
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [selectedFormat, setSelectedFormat] = useState<string | null>(null);
-  const [isConverting, setIsConverting] = useState(false);
-  const [convertProgress, setConvertProgress] = useState(0);
+  const [url, setUrl] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [result, setResult] = useState<RednoteResponse | null>(null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const { toast } = useToast();
 
-  const handleFileSelect = (files: File[]) => {
-    setSelectedFiles(files);
-    setSelectedFormat(null);
-  };
-
-  const handleFormatSelect = (format: string) => {
-    setSelectedFormat(format);
-  };
-
-  const handleConvert = async () => {
-    if (!selectedFiles.length || !selectedFormat) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!url) return;
 
     try {
-      setIsConverting(true);
-      setConvertProgress(0);
+      setIsProcessing(true);
+      setResult(null);
       
-      const results = await Promise.all(
-        selectedFiles.map(async (file, index) => {
-          const formData = new FormData();
-          formData.append('file', file);
-          formData.append('format', selectedFormat.toLowerCase());
+      if (!isValidRednoteUrl(url)) {
+        toast({
+          variant: 'destructive',
+          title: 'Invalid URL',
+          description: 'Please enter a valid Rednote URL.',
+        });
+        return;
+      }
 
-          const response = await fetch('/api/convert', {
-            method: 'POST',
-            body: formData,
-          });
+      // Try to get from cache first
+      const cacheKey = generateCacheKey(url);
+      const cachedData = getCache<RednoteResponse>(cacheKey);
+      
+      if (cachedData) {
+        setResult(cachedData);
+        toast({
+          title: 'Success!',
+          description: 'Retrieved content from cache.',
+        });
+        return;
+      }
 
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to convert image');
-          }
-
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          const originalName = file.name.split('.').slice(0, -1).join('.');
-          const targetFormat = selectedFormat.toLowerCase();
-          const actualFormat = targetFormat === 'raw' ? 'tiff' : targetFormat;
-          a.download = `${originalName}_converted.${actualFormat}`;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-
-          // Update progress
-          setConvertProgress(((index + 1) / selectedFiles.length) * 100);
-          
-          return true;
-        })
-      );
-
-      const successCount = results.filter(Boolean).length;
+      // If not in cache, fetch from API
+      const data = await getRednoteContent(url);
+      
+      // Check for points exhausted error
+      if (data.status === "301" || data.code === "301") {
+        toast({
+          variant: 'destructive',
+          title: 'Service Unavailable',
+          description: 'API points exhausted. Please try again later.',
+        });
+        return;
+      }
+      
+      setResult(data);
+      
+      // Only cache successful responses
+      if (data.status === "101" && data.code === "200") {
+        setCache(cacheKey, data);
+      }
       
       toast({
         title: 'Success!',
-        description: `Converted ${successCount} image${successCount !== 1 ? 's' : ''}.`,
+        description: 'Successfully retrieved content without watermark.',
       });
     } catch (error) {
-      console.error('Conversion error:', error);
+      console.error('Processing error:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to convert some images. Please try again.',
+        description: 'Failed to process the URL. Please try again.',
       });
     } finally {
-      setIsConverting(false);
-      setConvertProgress(0);
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast({
+        title: 'Copied!',
+        description: 'Link copied to clipboard.',
+      });
+    });
+  };
+
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+
+      toast({
+        title: 'Download Started',
+        description: 'Your file will be downloaded shortly.',
+      });
+    } catch (error) {
+      console.error('Download error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Download Failed',
+        description: 'Failed to download the file. Please try copying the link instead.',
+      });
     }
   };
 
   const features = [
     {
       icon: <Sparkles className="h-6 w-6" />,
-      label: "High Quality Conversion",
-      description: "Maintain original image quality with our advanced conversion technology"
+      label: "High Quality Images",
+      description: "Download original quality images without watermarks"
     },
     {
       icon: <Zap className="h-6 w-6" />,
-      label: "Lightning Fast",
-      description: "Convert your images instantly with our optimized processing"
+      label: "Instant Download",
+      description: "Get your images instantly with our optimized processing"
     },
     {
       icon: <Lock className="h-6 w-6" />,
       label: "100% Secure",
-      description: "Your images are processed locally and never stored on our servers"
+      description: "Your data is processed securely and never stored"
     },
     {
       icon: <Infinity className="h-6 w-6" />,
-      label: "Forever Free",
-      description: "No hidden fees, batch support - free forever at imageconvertfree.com"
+      label: "Reliable Service",
+      description: "Professional and stable service at rednote-tools-online"
     }
   ];
 
   const faqs = [
     {
-      question: "Is imageconvertfree.com really free?",
-      answer: "Yes! We are committed to providing our image conversion service completely free of charge, forever. No hidden fees, no premium features, just simple and effective image conversion for everyone."
+      question: "What is Rednote Tools?",
+      answer: "Rednote Tools is a professional service dedicated to providing high-quality content downloads from Rednote. We focus on delivering the best possible experience with our watermark removal technology."
     },
     {
-      question: "What image formats do you support?",
-      answer: "We support conversion between WebP, PNG, JPG, JPEG, and GIF formats. For RAW format conversion, we use high-quality TIFF format to preserve maximum image quality and data. We maintain high quality during conversion while optimizing file sizes."
+      question: "How do I get the Rednote link?",
+      answer: "Open the Rednote app, find the post you want to download, click the share button, and copy the link. Paste this link into our input box and we'll handle the rest!"
     },
     {
-      question: "Can I convert multiple images at once?",
-      answer: "Yes! Our batch conversion feature allows you to convert up to 5 images simultaneously while maintaining high quality and fast conversion speeds."
+      question: "What content can I download?",
+      answer: "You can download images and videos from public Rednote posts. The content will be downloaded in its original quality without watermarks."
     },
     {
-      question: "Is there a file size limit?",
-      answer: "We support images up to 50MB in size. This generous limit allows you to convert high-resolution images and RAW files while maintaining fast conversion speeds."
+      question: "Is there a limit to how many posts I can process?",
+      answer: "Currently, you can process one post at a time. Each post can contain multiple images or videos which will all be processed together."
     },
     {
-      question: "Are my images safe?",
-      answer: "Absolutely! Your privacy and security are our top priorities. All image processing is done in your browser - we never store or transmit your images to any server."
+      question: "Are the downloads safe?",
+      answer: "Absolutely! Your privacy and security are our top priorities. We only process the public content you request and never store any of your data."
     },
     {
-      question: "Why choose imageconvertfree.com?",
-      answer: "We offer a simple, fast, and completely free image conversion service with no strings attached. Our focus on privacy, speed, and quality makes us the ideal choice for all your image conversion needs."
+      question: "Why choose our service?",
+      answer: "We offer a professional, fast, and reliable way to download Rednote content without watermarks. Our focus on speed, quality, and user privacy makes us the ideal choice."
     }
   ];
 
@@ -155,18 +189,11 @@ export default function Home() {
               <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
                 Home
               </Link>
+              <Link href="/api" className="text-sm text-muted-foreground hover:text-foreground">
+                API
+              </Link>
               <a href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
               <a href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</a>
-              <a 
-                href="https://x.com/arkyu2077" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                </svg>
-              </a>
             </div>
           </div>
         </div>
@@ -176,216 +203,256 @@ export default function Home() {
         <div className="max-w-5xl w-full space-y-8">
           {/* Header Section */}
           <div className="text-center space-y-4">
-            <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500">
-              Free Image Converter
+            <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-rose-600">
+              Rednote Downloader
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Convert images between WebP, PNG, JPG, JPEG, GIF, and RAW formats with high quality.
-              <span className="font-semibold text-foreground"> Support batch conversion up to 5 images.</span>
+              Download Rednote images and videos without watermarks.
+              <span className="font-semibold text-foreground"> Fast, secure, and reliable.</span>
             </p>
           </div>
 
-          {/* Upload Section */}
+          {/* URL Input Section */}
           <div className="mt-12">
-            <UploadDropzone onFileSelect={handleFileSelect} />
+            <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Input
+                  type="text"
+                  placeholder="Paste your Rednote link here..."
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="flex-1"
+                />
+                <Button 
+                  type="submit" 
+                  disabled={isProcessing || !url}
+                  className="bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 transition-opacity"
+                >
+                  {isProcessing ? 'Processing...' : 'Download'}
+                </Button>
+              </div>
+            </form>
           </div>
 
-          {/* Format Selection */}
-          {selectedFiles.length > 0 && (
+          {/* Results Section */}
+          {result && (
             <div className="mt-8 animate-in fade-in slide-in-from-bottom-4">
               <div className="bg-card p-6 rounded-lg shadow-sm border">
-                <h3 className="text-2xl font-bold text-center mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500">
-                  Select Output Format
+                <h3 className="text-2xl font-bold text-center mb-6 bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-rose-600">
+                  Download Links
                 </h3>
-                <div className="flex flex-wrap gap-3 justify-center">
-                  {['WebP', 'PNG', 'JPG', 'JPEG', 'GIF', 'RAW'].map((format) => (
-                    <TooltipProvider key={format}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant={selectedFormat === format ? 'default' : 'outline'}
-                            className={cn(
-                              "min-w-[120px] h-12 relative overflow-hidden transition-all duration-300",
-                              selectedFormat === format && "bg-gradient-to-r from-blue-600 to-cyan-500 text-white border-0",
-                              !selectedFormat && "hover:border-blue-500/50",
-                              selectedFormat && selectedFormat !== format && "opacity-50 hover:opacity-75"
-                            )}
-                            onClick={() => handleFormatSelect(format)}
-                            disabled={isConverting}
-                          >
-                            <span className="flex items-center gap-1">
-                              {format}
-                              {format === 'RAW' && <Info className="h-4 w-4" />}
-                            </span>
-                            {selectedFormat === format && (
-                              <div className="absolute inset-0 bg-white/10 animate-pulse" />
-                            )}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {format === 'RAW' ? (
-                            <p className="max-w-xs">RAW format will be converted to high-quality TIFF format to preserve maximum image data and quality.</p>
-                          ) : (
-                            <p>Convert to {format} format</p>
-                          )}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
+                
+                {/* Title */}
+                <div className="mb-6">
+                  <h4 className="font-medium text-lg mb-2">Title</h4>
+                  <p className="text-muted-foreground">{result.data.title}</p>
                 </div>
-                {selectedFormat && (
-                  <div className="mt-8 text-center space-y-4">
-                    {selectedFormat === 'RAW' && (
-                      <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg mb-4">
-                        <p className="flex items-center gap-2">
-                          <Info className="h-4 w-4 shrink-0" />
-                          Your image will be converted to TIFF format to maintain maximum quality and compatibility.
-                        </p>
-                      </div>
-                    )}
-                    <Button
-                      size="lg"
-                      className={cn(
-                        "w-full md:w-auto min-w-[200px] bg-gradient-to-r from-blue-600 to-cyan-500 hover:opacity-90 transition-opacity",
-                        isConverting && "opacity-50"
-                      )}
-                      onClick={handleConvert}
-                      disabled={isConverting}
-                    >
-                      {isConverting ? (
-                        <span className="flex items-center gap-2">
-                          <svg
-                            className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
+
+                {/* Download Links */}
+                <div className="space-y-3">
+                  {/* Video Download */}
+                  {result.data.videourl && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-lg">Video</h4>
+                      <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                        <code className="text-sm text-muted-foreground truncate flex-1 mr-4 font-mono">
+                          {result.data.videourl}
+                        </code>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCopy(result.data.videourl)}
+                            className="shrink-0"
                           >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            ></circle>
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            ></path>
-                          </svg>
-                          Converting... {convertProgress > 0 && `(${Math.round(convertProgress)}%)`}
-                        </span>
-                      ) : (
-                        `Convert ${selectedFiles.length} image${selectedFiles.length !== 1 ? 's' : ''} to ${selectedFormat}`
-                      )}
-                    </Button>
-                    {isConverting && convertProgress > 0 && (
-                      <div className="w-full max-w-md mx-auto h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-blue-600 to-cyan-500 transition-all duration-300"
-                          style={{ width: `${convertProgress}%` }}
-                        />
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copy
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="shrink-0 bg-gradient-to-r from-red-500 to-rose-600"
+                            onClick={() => handleDownload(
+                              result.data.videourl,
+                              `${result.data.title || 'video'}.mp4`
+                            )}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+
+                  {/* Cover Image Download */}
+                  {result.data.coverurl && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-lg">Cover Image</h4>
+                      <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                        <code className="text-sm text-muted-foreground truncate flex-1 mr-4 font-mono">
+                          {result.data.coverurl}
+                        </code>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCopy(result.data.coverurl)}
+                            className="shrink-0"
+                          >
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copy
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="shrink-0 bg-gradient-to-r from-red-500 to-rose-600"
+                            onClick={() => handleDownload(
+                              result.data.coverurl,
+                              `${result.data.title || 'cover'}.jpg`
+                            )}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Multiple Images Download */}
+                  {result.data.images && result.data.images.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-lg">Images</h4>
+                      <div className="space-y-2">
+                        {result.data.images.map((imageUrl, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                            <code className="text-sm text-muted-foreground truncate flex-1 mr-4 font-mono">
+                              {imageUrl}
+                            </code>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCopy(imageUrl)}
+                                className="shrink-0"
+                              >
+                                <Copy className="h-4 w-4 mr-2" />
+                                Copy
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="shrink-0 bg-gradient-to-r from-red-500 to-rose-600"
+                                onClick={() => handleDownload(
+                                  imageUrl,
+                                  `${result.data.title || 'image'}_${index + 1}.jpg`
+                                )}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Download
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        {result.data.images.length > 1 && (
+                          <Button
+                            className="w-full mt-2 bg-gradient-to-r from-red-500 to-rose-600"
+                            onClick={() => {
+                              result.data.images.forEach((imageUrl, index) => {
+                                handleDownload(
+                                  imageUrl,
+                                  `${result.data.title || 'image'}_${index + 1}.jpg`
+                                );
+                              });
+                            }}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download All Images
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Single Image Download (fallback) */}
+                  {result.data.download_image && !result.data.videourl && (!result.data.images || result.data.images.length === 0) && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-lg">Image</h4>
+                      <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                        <code className="text-sm text-muted-foreground truncate flex-1 mr-4 font-mono">
+                          {result.data.download_image}
+                        </code>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCopy(result.data.download_image)}
+                            className="shrink-0"
+                          >
+                            <Copy className="h-4 w-4 mr-2" />
+                            Copy
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="shrink-0 bg-gradient-to-r from-red-500 to-rose-600"
+                            onClick={() => handleDownload(
+                              result.data.download_image,
+                              `${result.data.title || 'image'}.jpg`
+                            )}
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
 
           {/* Features Section */}
-          <div className="mt-20 space-y-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-center">Why Choose imageconvertfree.com?</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {features.map((feature, index) => (
-                <div
-                  key={index}
-                  className="p-6 rounded-lg border bg-card hover:shadow-md transition-shadow"
-                >
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">{feature.label}</h3>
-                  <p className="text-muted-foreground">{feature.description}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-16">
+            {features.map((feature, index) => (
+              <div
+                key={index}
+                className="p-6 rounded-lg border bg-card hover:shadow-md transition-shadow"
+              >
+                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                  <div className="text-primary">{feature.icon}</div>
                 </div>
-              ))}
-            </div>
+                <h3 className="font-semibold mb-2">{feature.label}</h3>
+                <p className="text-sm text-muted-foreground">{feature.description}</p>
+              </div>
+            ))}
           </div>
 
           {/* FAQ Section */}
-          <div className="mt-20 space-y-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-center">Frequently Asked Questions</h2>
-            <div className="space-y-4">
-              {faqs.map((faq, index) => (
-                <div
-                  key={index}
-                  className="border rounded-lg overflow-hidden"
+          <div className="mt-16 space-y-4">
+            <h2 className="text-3xl font-bold text-center mb-8">Frequently Asked Questions</h2>
+            {faqs.map((faq, index) => (
+              <div
+                key={index}
+                className="border rounded-lg"
+              >
+                <button
+                  className="w-full px-6 py-4 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                  onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
                 >
-                  <button
-                    className="w-full p-4 text-left flex items-center justify-between hover:bg-muted/50"
-                    onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
-                  >
-                    <span className="font-medium">{faq.question}</span>
-                    {openFaqIndex === index ? (
-                      <ChevronUp className="h-5 w-5" />
-                    ) : (
-                      <ChevronDown className="h-5 w-5" />
-                    )}
-                  </button>
-                  {openFaqIndex === index && (
-                    <div className="p-4 bg-muted/30 border-t">
-                      <p className="text-muted-foreground">{faq.answer}</p>
-                    </div>
+                  <span className="font-medium text-left">{faq.question}</span>
+                  {openFaqIndex === index ? (
+                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
                   )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Footer */}
-          <footer className="mt-12 border-t">
-            <div className="max-w-7xl mx-auto py-8">
-              <div className="grid grid-cols-12 gap-8 px-4">
-                {/* Logo and Copyright */}
-                <div className="col-span-12 md:col-span-5 space-y-3">
-                  <Logo />
-                  <p className="text-sm text-muted-foreground">
-                    Convert your images to any type online
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    © Copyright 2025 imageconvertfree.com. All Rights Reserved.
-                  </p>
-                </div>
-
-                {/* Spacer */}
-                <div className="hidden md:block md:col-span-3" />
-
-                {/* Product */}
-                <div className="col-span-6 md:col-span-2">
-                  <h3 className="font-semibold text-sm">Product</h3>
-                  <ul className="mt-3 space-y-1.5">
-                    <li>
-                      <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Image Convert</Link>
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Legal */}
-                <div className="col-span-6 md:col-span-2">
-                  <h3 className="font-semibold text-sm">Legal</h3>
-                  <ul className="mt-3 space-y-1.5">
-                    <li>
-                      <a href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</a>
-                    </li>
-                    <li>
-                      <a href="/cookies" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Cookie Policy</a>
-                    </li>
-                  </ul>
-                </div>
+                </button>
+                {openFaqIndex === index && (
+                  <div className="px-6 py-4 text-muted-foreground">
+                    {faq.answer}
+                  </div>
+                )}
               </div>
-            </div>
-          </footer>
+            ))}
+          </div>
         </div>
       </main>
     </>
