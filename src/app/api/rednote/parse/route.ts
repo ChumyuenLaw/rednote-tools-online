@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.REDNOTE_API_BASE_URL;
+const API_BASE_URL = process.env.REDNOTE_API_BASE_URL || 'https://api.ciyer.com';
 const API_UID = process.env.REDNOTE_API_UID;
 const API_SECRET = process.env.REDNOTE_API_SECRET;
 
 export async function POST(request: Request) {
   try {
-    if (!API_BASE_URL || !API_UID || !API_SECRET) {
+    if (!API_UID || !API_SECRET) {
       console.error('Missing required environment variables');
       return NextResponse.json(
         { error: 'Server configuration error' },
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     }
 
     // Process through Rednote API
-    const apiUrl = `${API_BASE_URL}/?uid=${API_UID}&my=${API_SECRET}&url=${encodeURIComponent(url)}`;
+    const apiUrl = `${API_BASE_URL}/api/dsp?uid=${API_UID}&my=${API_SECRET}&url=${encodeURIComponent(url)}`;
     console.log('Requesting Rednote API:', apiUrl);
 
     const response = await fetch(apiUrl);
