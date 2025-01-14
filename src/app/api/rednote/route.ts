@@ -35,6 +35,32 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
+
+    // 如果是视频或图片链接，我们需要代理下载
+    if (data.data?.videourl || data.data?.download_image || (data.data?.images && data.data.images.length > 0)) {
+      const downloadUrl = data.data.videourl || data.data.download_image || data.data.images[0];
+      const downloadResponse = await fetch(downloadUrl);
+      
+      if (!downloadResponse.ok) {
+        throw new Error('Failed to download content');
+      }
+
+      const contentType = downloadResponse.headers.get('content-type') || 'application/octet-stream';
+      const contentDisposition = downloadResponse.headers.get('content-disposition');
+
+      const headers = new Headers();
+      headers.set('Content-Type', contentType);
+      if (contentDisposition) {
+        headers.set('Content-Disposition', contentDisposition);
+      }
+
+      const blob = await downloadResponse.blob();
+      return new NextResponse(blob, {
+        status: 200,
+        headers,
+      });
+    }
+
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error processing Rednote content:', error);

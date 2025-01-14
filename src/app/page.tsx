@@ -102,7 +102,19 @@ export default function Home() {
 
   const handleDownload = async (url: string, filename: string) => {
     try {
-      const response = await fetch(url);
+      // 通过我们的 API 代理下载
+      const response = await fetch('/api/rednote', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       
@@ -115,15 +127,15 @@ export default function Home() {
       window.URL.revokeObjectURL(blobUrl);
 
       toast({
-        title: 'Download Started',
-        description: 'Your file will be downloaded shortly.',
+        title: '下载开始',
+        description: '文件将很快下载完成',
       });
     } catch (error) {
       console.error('Download error:', error);
       toast({
         variant: 'destructive',
-        title: 'Download Failed',
-        description: 'Failed to download the file. Please try copying the link instead.',
+        title: '下载失败',
+        description: '请稍后重试',
       });
     }
   };
