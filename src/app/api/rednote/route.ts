@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { url } = await request.json();
+    const { url, download } = await request.json();
 
     if (!url) {
       return NextResponse.json(
@@ -23,8 +23,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // First check if the URL is a direct media URL
-    if (url.startsWith('http') && (url.includes('.mp4') || url.includes('.jpg') || url.includes('.png'))) {
+    // If it's a direct media URL and download is requested
+    if (download && url.startsWith('http') && (url.includes('.mp4') || url.includes('.jpg') || url.includes('.png'))) {
       console.log('Direct media download:', url);
       const downloadResponse = await fetch(url, {
         headers: {
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // If not a direct media URL, process through Rednote API
+    // Process through Rednote API
     const apiUrl = `${API_BASE_URL}/?uid=${API_UID}&my=${API_SECRET}&url=${encodeURIComponent(url)}`;
     console.log('Requesting Rednote API:', apiUrl);
 
@@ -67,9 +67,14 @@ export async function POST(request: Request) {
     const data = await response.json();
     console.log('Rednote API response:', data);
 
-    // Return the API response data if no media URLs are present
-    if (!data.data?.videourl && !data.data?.download_image && (!data.data?.images || data.data.images.length === 0)) {
+    // If download is not requested, return the API response
+    if (!download) {
       return NextResponse.json(data);
+    }
+
+    // If download is requested but no media URLs are present
+    if (!data.data?.videourl && !data.data?.download_image && (!data.data?.images || data.data.images.length === 0)) {
+      throw new Error('No media content found');
     }
 
     // Handle media download

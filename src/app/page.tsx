@@ -56,7 +56,19 @@ export default function Home() {
       }
 
       // If not in cache, fetch from API
-      const data = await getRednoteContent(url);
+      const response = await fetch('/api/rednote', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch data');
+      }
+
+      const data = await response.json();
       
       // Check for points exhausted error
       if (data.status === "301" || data.code === "301") {
@@ -102,13 +114,12 @@ export default function Home() {
 
   const handleDownload = async (url: string, filename: string) => {
     try {
-      // 通过我们的 API 代理下载
       const response = await fetch('/api/rednote', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, download: true }),
       });
 
       if (!response.ok) {
