@@ -114,12 +114,11 @@ export default function Home() {
 
   const handleDownload = async (url: string, filename: string) => {
     try {
-      const response = await fetch('/api/rednote', {
-        method: 'POST',
+      const response = await fetch(url, {
         headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url, download: true }),
+          'Accept': 'image/*, video/*',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
       });
 
       if (!response.ok) {
