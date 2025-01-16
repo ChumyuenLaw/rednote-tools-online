@@ -1,19 +1,9 @@
 import { NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.REDNOTE_API_BASE_URL || 'https://api.ciyer.com';
-const API_UID = process.env.REDNOTE_API_UID;
-const API_SECRET = process.env.REDNOTE_API_SECRET;
+const API_KEY = process.env.REDNOTE_API_KEY || '1234';
 
 export async function POST(request: Request) {
   try {
-    if (!API_UID || !API_SECRET) {
-      console.error('Missing required environment variables');
-      return NextResponse.json(
-        { error: 'Server configuration error' },
-        { status: 500 }
-      );
-    }
-
     const { url } = await request.json();
 
     if (!url) {
@@ -23,11 +13,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Process through Rednote API
-    const apiUrl = `${API_BASE_URL}/api/dsp?uid=${API_UID}&my=${API_SECRET}&url=${encodeURIComponent(url)}`;
-    console.log('Requesting Rednote API:', apiUrl);
+    // Process through new API
+    const apiUrl = 'https://api.rednotetoolsonline.com/v1/api/rednote-downloader';
+    console.log('Requesting API:', apiUrl);
 
-    const response = await fetch(apiUrl);
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'Authorization': `KEY ${API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url }),
+    });
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -36,12 +34,12 @@ export async function POST(request: Request) {
     }
 
     const data = await response.json();
-    console.log('Rednote API response:', data);
+    console.log('API response:', data);
 
     return NextResponse.json(data);
 
   } catch (error) {
-    console.error('Error processing Rednote content:', error);
+    console.error('Error processing content:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to process content' },
       { status: 500 }
