@@ -1,9 +1,28 @@
 import { NextResponse } from 'next/server';
+import { checkSignValid } from '@/lib/sign';
 
 const API_KEY = process.env.REDNOTE_API_KEY || '1234';
+const FIXED_SIGN = process.env.FIXED_SIGN || '';
 
 export async function POST(request: Request) {
   try {
+    // 获取并验证 sign
+    const sign = request.headers.get('X-Sign');
+    if (!sign) {
+      return NextResponse.json(
+        { error: 'Missing X-Sign header' },
+        { status: 401 }
+      );
+    }
+
+    const isSignValid = await checkSignValid(sign, FIXED_SIGN);
+    if (!isSignValid) {
+      return NextResponse.json(
+        { error: 'Invalid sign' },
+        { status: 401 }
+      );
+    }
+
     const { url } = await request.json();
 
     if (!url) {

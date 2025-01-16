@@ -51,30 +51,92 @@ export default function ApiPage() {
           </div>
 
           <div className="space-y-8">
-            {/* Contact Section */}
+            
+
+            {/* Pricing Section */}
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">Request API Access</h2>
-              <p className="text-muted-foreground">
-                To get started with our API, please contact us via email. We'll provide you with API credentials and documentation.
-              </p>
-              <div className="flex items-center space-x-4 mt-4">
+              <h2 className="text-2xl font-semibold">API Pricing</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Monthly Plan */}
+                <div className="p-6 border rounded-lg bg-card">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-baseline">
+                      <h3 className="text-2xl font-bold">$9.90</h3>
+                      <span className="text-sm text-muted-foreground">Monthly</span>
+                    </div>
+                    <ul className="space-y-2">
+                      <li className="flex items-center">
+                        <span className="text-green-500 mr-2">✓</span>
+                        600 API calls per month
+                      </li>
+                      <li className="flex items-center">
+                        <span className="text-green-500 mr-2">✓</span>
+                        Auto-renewal
+                      </li>
+                      <li className="flex items-center">
+                        <span className="text-green-500 mr-2">✓</span>
+                        Full API documentation
+                      </li>
+                    </ul>
+                    <div className="space-y-4 pt-4">
+                      <Button
+                        className="w-full bg-gradient-to-r from-red-500 to-rose-600"
+                        onClick={() => window.open('https://buy.stripe.com/bIY014c9HcHmdq05km', '_blank')}
+                      >
+                        Subscribe Now
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* One-time Plan */}
+                <div className="p-6 border rounded-lg bg-card">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-baseline">
+                      <h3 className="text-2xl font-bold">$19.90</h3>
+                      <span className="text-sm text-muted-foreground">One-time payment</span>
+                    </div>
+                    <ul className="space-y-2">
+                      <li className="flex items-center">
+                        <span className="text-green-500 mr-2">✓</span>
+                        1,000 API calls
+                      </li>
+                      <li className="flex items-center">
+                        <span className="text-green-500 mr-2">✓</span>
+                        No expiration date
+                      </li>
+                      <li className="flex items-center">
+                        <span className="text-green-500 mr-2">✓</span>
+                        Full API documentation
+                      </li>
+                    </ul>
+                    <div className="space-y-4 pt-4">
+                      <Button
+                        className="w-full bg-gradient-to-r from-red-500 to-rose-600"
+                        onClick={() => window.open('https://buy.stripe.com/4gw1584Hf8r6adOdQR', '_blank')}
+                      >
+                        Purchase Now
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center space-y-4 pt-4">
                 <Button
-                  onClick={handleCopyEmail}
                   variant="outline"
-                  className="flex items-center space-x-2"
+                  className="w-full max-w-md"
+                  onClick={() => window.open('https://api.rednotetoolsonline.com/docs', '_blank')}
                 >
-                  <Mail className="h-4 w-4" />
-                  <span>{copied ? 'Copied!' : apiEmail}</span>
+                  View API Documentation
                 </Button>
-                <Button
-                  onClick={() => window.location.href = `mailto:${apiEmail}`}
-                  className="bg-gradient-to-r from-red-500 to-rose-600"
-                >
-                  Send Email
-                </Button>
+                <p className="text-sm text-muted-foreground text-center">
+                  After successful payment, we will send the API key to your payment email address
+                </p>
               </div>
             </section>
 
+            
             {/* Features Section */}
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold">API Features</h2>
@@ -98,30 +160,30 @@ export default function ApiPage() {
               </div>
             </section>
 
-            {/* Getting Started Section */}
+            {/* Contact Section */}
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">Getting Started</h2>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h3 className="font-medium">1. Contact Us</h3>
-                  <p className="text-muted-foreground">
-                    Send us an email to request API access credentials.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="font-medium">2. Receive Credentials</h3>
-                  <p className="text-muted-foreground">
-                    We'll provide you with an API key and necessary documentation.
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="font-medium">3. Integration</h3>
-                  <p className="text-muted-foreground">
-                    Follow our documentation to integrate the API into your application.
-                  </p>
-                </div>
+              <h2 className="text-2xl font-semibold">Support</h2>
+              <p className="text-muted-foreground">
+                Feel free to contact us anytime for support, questions, or to get started with our API. We're here to help!
+              </p>
+              <div className="flex items-center space-x-4 mt-4">
+                <Button
+                  onClick={handleCopyEmail}
+                  variant="outline"
+                  className="flex items-center space-x-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  <span>{copied ? 'Copied!' : apiEmail}</span>
+                </Button>
+                <Button
+                  onClick={() => window.location.href = `mailto:${apiEmail}`}
+                  className="bg-gradient-to-r from-red-500 to-rose-600"
+                >
+                  Send Email
+                </Button>
               </div>
             </section>
+
           </div>
         </div>
       </main>

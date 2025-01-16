@@ -6,17 +6,11 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Sparkles, Zap, Lock, Infinity, ChevronDown, ChevronUp, Download, Copy, ExternalLink } from 'lucide-react';
 import { Logo } from '@/components/logo';
-import { cn } from '@/lib/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { getRednoteContent, isValidRednoteUrl } from '@/lib/api';
+import { isValidRednoteUrl } from '@/lib/api';
 import { getCache, setCache, generateCacheKey } from '@/lib/cache';
 import Link from "next/link";
 import type { RednoteResponse } from '@/types/rednote';
+import { generateSign } from '@/lib/sign';
 
 export default function Home() {
   const [url, setUrl] = useState('');
@@ -55,11 +49,15 @@ export default function Home() {
         return;
       }
 
+      // Generate sign for API request
+      const sign = await generateSign();
+
       // If not in cache, fetch from parse API
       const response = await fetch('/api/rednote/parse', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Sign': sign,
         },
         body: JSON.stringify({ url }),
       });
@@ -160,50 +158,46 @@ export default function Home() {
   const features = [
     {
       icon: <Sparkles className="h-6 w-6" />,
-      label: "High Quality Images",
-      description: "Download original quality images without watermarks"
+      label: "HD Quality",
+      description: "Download original quality content without watermarks"
     },
     {
       icon: <Zap className="h-6 w-6" />,
-      label: "Instant Download",
-      description: "Get your images instantly with our optimized processing"
+      label: "Lightning Fast",
+      description: "Instant downloads with optimized processing"
     },
     {
       icon: <Lock className="h-6 w-6" />,
-      label: "100% Secure",
-      description: "Your data is processed securely and never stored"
+      label: "Secure & Safe",
+      description: "Your data is protected and never stored"
     },
     {
       icon: <Infinity className="h-6 w-6" />,
       label: "Reliable Service",
-      description: "Professional and stable service at rednote-tools-online"
+      description: "Professional and stable service with 99.9% uptime"
     }
   ];
 
   const faqs = [
     {
-      question: "What is Rednote Tools?",
-      answer: "Rednote Tools is a professional service dedicated to providing high-quality content downloads from Rednote. We focus on delivering the best possible experience with our watermark removal technology."
+      question: "How to download from RedNote?",
+      answer: "Simply copy the RedNote link, paste it here, and click Download. We'll process your request instantly and provide HD quality content without watermarks."
     },
     {
-      question: "How do I get the Rednote link?",
-      answer: "Open the Rednote app, find the post you want to download, click the share button, and copy the link. Paste this link into our input box and we'll handle the rest!"
+      question: "What can I download?",
+      answer: "You can download any public videos and images from RedNote in their original HD quality, completely free and without watermarks."
     },
     {
-      question: "What content can I download?",
-      answer: "You can download images and videos from public Rednote posts. The content will be downloaded in its original quality without watermarks."
-    },
-    {
-      question: "Is there a limit to how many posts I can process?",
-      answer: "Currently, you can process one post at a time. Each post can contain multiple images or videos which will all be processed together."
-    },
-    {
-      question: "Are the downloads safe?",
-      answer: "Absolutely! Your privacy and security are our top priorities. We only process the public content you request and never store any of your data."
+      question: "Is it safe to use?",
+      answer: "Absolutely! We prioritize your security and privacy. We don't store any of your data and provide secure, direct downloads."
     },
     {
       question: "Why choose our service?",
-      answer: "We offer a professional, fast, and reliable way to download Rednote content without watermarks. Our focus on speed, quality, and user privacy makes us the ideal choice."
+      answer: "We offer instant downloads, HD quality, no watermarks, and completely free service. Our platform is fast, reliable, and available 24/7."
+    },
+    {
+      question: "How to get API access?",
+      answer: "We offer a paid API plan at $19.90 for 1,000 API calls with no expiration. Visit our purchase page at https://buy.stripe.com/4gw1584Hf8r6adOdQR. After payment, we'll send your API key to your email. For API documentation, visit https://api.rednotetoolsonline.com/docs"
     }
   ];
 
@@ -233,11 +227,11 @@ export default function Home() {
           {/* Header Section */}
           <div className="text-center space-y-4">
             <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-rose-600">
-              Rednote Downloader
+              RedNote HD Downloader
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Download Rednote images and videos without watermarks.
-              <span className="font-semibold text-foreground"> Fast, secure, and reliable.</span>
+              Download HD videos and images from RedNote without watermark.
+              <span className="font-semibold text-foreground"> Professional, Fast & Free.</span>
             </p>
           </div>
 
@@ -247,7 +241,7 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Input
                   type="text"
-                  placeholder="Paste your Rednote link here..."
+                  placeholder="Paste your RedNote link here..."
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
                   className="flex-1"
@@ -257,7 +251,7 @@ export default function Home() {
                   disabled={isProcessing || !url}
                   className="bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 transition-opacity"
                 >
-                  {isProcessing ? 'Processing...' : 'Download'}
+                  {isProcessing ? 'Processing...' : 'Download HD'}
                 </Button>
               </div>
             </form>
@@ -278,160 +272,131 @@ export default function Home() {
                 </div>
 
                 {/* Download Links */}
-                <div className="space-y-3">
+                <div className="space-y-6">
                   {/* Video Download */}
-                  {result.data.videourl && (
-                    <div className="space-y-2">
+                  {result.data.videoUrl && (
+                    <div className="space-y-4">
                       <h4 className="font-medium text-lg">Video</h4>
-                      <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                        <code className="text-sm text-muted-foreground truncate flex-1 mr-4 font-mono">
-                          {result.data.videourl}
-                        </code>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleCopy(result.data.videourl)}
-                            className="shrink-0"
-                          >
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copy
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="shrink-0 bg-gradient-to-r from-red-500 to-rose-600"
-                            onClick={() => handleDownload(
-                              result.data.videourl,
-                              `${result.data.title || 'video'}.mp4`
-                            )}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Cover Image Download */}
-                  {result.data.coverurl && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-lg">Cover Image</h4>
-                      <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                        <code className="text-sm text-muted-foreground truncate flex-1 mr-4 font-mono">
-                          {result.data.coverurl}
-                        </code>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleCopy(result.data.coverurl)}
-                            className="shrink-0"
-                          >
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copy
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="shrink-0 bg-gradient-to-r from-red-500 to-rose-600"
-                            onClick={() => handleDownload(
-                              result.data.coverurl,
-                              `${result.data.title || 'cover'}.jpg`
-                            )}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Multiple Images Download */}
-                  {result.data.images && result.data.images.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-lg">Images</h4>
-                      <div className="space-y-2">
-                        {result.data.images.map((imageUrl, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                            <code className="text-sm text-muted-foreground truncate flex-1 mr-4 font-mono">
-                              {imageUrl}
-                            </code>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleCopy(imageUrl)}
-                                className="shrink-0"
-                              >
-                                <Copy className="h-4 w-4 mr-2" />
-                                Copy
-                              </Button>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                        {/* Video Preview */}
+                        <div className="relative rounded-lg overflow-hidden bg-secondary group">
+                          <div className="w-full aspect-[16/9] relative">
+                            <img
+                              src={result.data.coverUrl}
+                              alt="Video Preview"
+                              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
                               <Button
                                 size="sm"
                                 className="shrink-0 bg-gradient-to-r from-red-500 to-rose-600"
                                 onClick={() => handleDownload(
-                                  imageUrl,
-                                  `${result.data.title || 'image'}_${index + 1}.jpg`
+                                  result.data.videoUrl,
+                                  `${result.data.title || 'video'}.mp4`
                                 )}
                               >
                                 <Download className="h-4 w-4 mr-2" />
-                                Download
+                                Download Video
                               </Button>
                             </div>
                           </div>
-                        ))}
-                        {result.data.images.length > 1 && (
-                          <Button
-                            className="w-full mt-2 bg-gradient-to-r from-red-500 to-rose-600"
-                            onClick={() => {
-                              result.data.images.forEach((imageUrl, index) => {
-                                handleDownload(
-                                  imageUrl,
-                                  `${result.data.title || 'image'}_${index + 1}.jpg`
-                                );
-                              });
-                            }}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download All Images
-                          </Button>
-                        )}
+                        </div>
+
+                        {/* Video URL and Actions */}
+                        <div className="flex flex-col space-y-2">
+                          <div className="p-3 bg-secondary rounded-lg">
+                            <p className="text-sm font-medium mb-2">Video URL:</p>
+                            <code className="text-sm text-muted-foreground break-all font-mono">
+                              {result.data.videoUrl}
+                            </code>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              className="flex-1"
+                              onClick={() => handleCopy(result.data.videoUrl)}
+                            >
+                              <Copy className="h-4 w-4 mr-2" />
+                              Copy Link
+                            </Button>
+                            <Button
+                              className="flex-1 bg-gradient-to-r from-red-500 to-rose-600"
+                              onClick={() => handleDownload(
+                                result.data.videoUrl,
+                                `${result.data.title || 'video'}.mp4`
+                              )}
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Download
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Single Image Download (fallback) */}
-                  {result.data.download_image && !result.data.videourl && (!result.data.images || result.data.images.length === 0) && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-lg">Image</h4>
-                      <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                        <code className="text-sm text-muted-foreground truncate flex-1 mr-4 font-mono">
-                          {result.data.download_image}
-                        </code>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleCopy(result.data.download_image)}
-                            className="shrink-0"
-                          >
-                            <Copy className="h-4 w-4 mr-2" />
-                            Copy
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="shrink-0 bg-gradient-to-r from-red-500 to-rose-600"
-                            onClick={() => handleDownload(
-                              result.data.download_image,
-                              `${result.data.title || 'image'}.jpg`
-                            )}
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download
-                          </Button>
-                        </div>
+                  {/* Images Section */}
+                  {result.data.images && result.data.images.length > 0 && (
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-lg">Images</h4>
+                      
+                      {/* Image Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {result.data.images.map((imageUrl, index) => (
+                          <div key={index} className="space-y-2">
+                            <div className="relative rounded-lg overflow-hidden bg-secondary group">
+                              <div className="w-full aspect-[16/9] relative">
+                                <img
+                                  src={imageUrl}
+                                  alt={`Image ${index + 1}`}
+                                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleCopy(imageUrl)}
+                                    className="shrink-0"
+                                  >
+                                    <Copy className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="shrink-0 bg-gradient-to-r from-red-500 to-rose-600"
+                                    onClick={() => handleDownload(
+                                      imageUrl,
+                                      `${result.data.title || 'image'}_${index + 1}.jpg`
+                                    )}
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-sm font-medium text-center text-muted-foreground">
+                              Image {index + 1}
+                            </div>
+                          </div>
+                        ))}
                       </div>
+
+                      {/* Download All Images Button */}
+                      {result.data.images.length > 1 && (
+                        <Button
+                          className="w-full mt-4 bg-gradient-to-r from-red-500 to-rose-600"
+                          onClick={() => {
+                            result.data.images?.forEach((imageUrl, index) => {
+                              handleDownload(
+                                imageUrl,
+                                `${result.data.title || 'image'}_${index + 1}.jpg`
+                              );
+                            });
+                          }}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Download All Images
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>

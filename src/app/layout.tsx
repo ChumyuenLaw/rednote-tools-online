@@ -13,9 +13,9 @@ export const metadata: Metadata = {
       ? 'http://localhost:3000'
       : 'https://rednotetoolsonline.com'
   ),
-  title: 'Rednote - Professional Content Downloader Without Watermark',
-  description: 'Download Rednote images and videos without watermarks. Fast, secure, and reliable. The best tool for saving content from Rednote.',
-  keywords: ['rednote downloader', 'rednote no watermark', 'download rednote', 'rednote images', 'rednote videos', 'xiaohongshu downloader', '小红书无水印下载'],
+  title: 'Rednote - Videos and images downloader without watermark',
+  description: 'Download Rednote videos and images without watermarks. Fast, secure, and reliable. The best tool for saving content from Rednote.',
+  keywords: [],
   icons: {
     icon: [
       {
@@ -38,8 +38,8 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: 'RedNote - Professional Content Downloader Without Watermark',
-    description: 'Download RedNote images and videos without watermarks. Fast, secure, and reliable.',
+    title: 'RedNote - Videos and images downloader without watermark',
+    description: 'Download RedNote videos and images without watermarks. Fast, secure, and reliable.',
     url: 'https://rednotetoolsonline.com',
     siteName: 'Rednote Tools',
     images: [
