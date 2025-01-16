@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Sparkles, Zap, Lock, Infinity, ChevronDown, ChevronUp, Download, Copy, ExternalLink } from 'lucide-react';
 import { Logo } from '@/components/logo';
+import { RedNoteImage } from '@/components/RedNoteImage';
 import { isValidRednoteUrl } from '@/lib/api';
 import { getCache, setCache, generateCacheKey } from '@/lib/cache';
 import Link from "next/link";
@@ -282,7 +283,7 @@ export default function Home() {
                         <div className="relative rounded-lg overflow-hidden bg-secondary group">
                           <div className="w-full aspect-[16/9] relative">
                             {result.data.coverUrl && (
-                              <img
+                              <RedNoteImage
                                 src={result.data.coverUrl}
                                 alt="Video Preview"
                                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -348,7 +349,7 @@ export default function Home() {
                           <div key={index} className="space-y-2">
                             <div className="relative rounded-lg overflow-hidden bg-secondary group">
                               <div className="w-full aspect-[16/9] relative">
-                                <img
+                                <RedNoteImage
                                   src={imageUrl}
                                   alt={`Image ${index + 1}`}
                                   className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
