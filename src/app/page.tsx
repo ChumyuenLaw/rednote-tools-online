@@ -281,16 +281,18 @@ export default function Home() {
                         {/* Video Preview */}
                         <div className="relative rounded-lg overflow-hidden bg-secondary group">
                           <div className="w-full aspect-[16/9] relative">
-                            <img
-                              src={result.data.coverUrl}
-                              alt="Video Preview"
-                              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
+                            {result.data.coverUrl && (
+                              <img
+                                src={result.data.coverUrl}
+                                alt="Video Preview"
+                                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            )}
                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
                               <Button
                                 size="sm"
                                 className="shrink-0 bg-gradient-to-r from-red-500 to-rose-600"
-                                onClick={() => handleDownload(
+                                onClick={() => result.data.videoUrl && handleDownload(
                                   result.data.videoUrl,
                                   `${result.data.title || 'video'}.mp4`
                                 )}
@@ -314,14 +316,14 @@ export default function Home() {
                             <Button
                               variant="outline"
                               className="flex-1"
-                              onClick={() => handleCopy(result.data.videoUrl)}
+                              onClick={() => result.data.videoUrl && handleCopy(result.data.videoUrl)}
                             >
                               <Copy className="h-4 w-4 mr-2" />
                               Copy Link
                             </Button>
                             <Button
                               className="flex-1 bg-gradient-to-r from-red-500 to-rose-600"
-                              onClick={() => handleDownload(
+                              onClick={() => result.data.videoUrl && handleDownload(
                                 result.data.videoUrl,
                                 `${result.data.title || 'video'}.mp4`
                               )}
