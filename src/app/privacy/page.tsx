@@ -107,7 +107,7 @@ export default function PrivacyPolicy() {
               <p>
                 If you have any questions about this Privacy Policy, please contact us at:
               </p>
-              <p className="font-medium">support@rednotetoolsonline.com</p>
+              <p className="font-medium">dongd202306@gmail.com</p>
             </section>
 
             <section className="space-y-4">
