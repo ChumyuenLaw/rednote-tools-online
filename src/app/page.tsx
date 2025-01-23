@@ -161,45 +161,53 @@ export default function Home() {
     {
       icon: <Sparkles className="h-6 w-6" />,
       label: "HD Video Quality",
-      description: "Download Rednote videos in original HD quality without watermarks"
+      description: "Download Rednote videos in original HD quality, completely free and without watermarks"
     },
     {
       icon: <Zap className="h-6 w-6" />,
-      label: "Fast Download",
-      description: "Instant video downloads with optimized processing speed"
+      label: "Fast & Free Online",
+      description: "Instant online video downloads with optimized processing speed"
     },
     {
       icon: <Lock className="h-6 w-6" />,
       label: "Secure Downloads",
-      description: "Your video downloads are protected and never stored"
+      description: "Your online video downloads are protected and never stored"
     },
     {
       icon: <Infinity className="h-6 w-6" />,
-      label: "Unlimited Downloads",
-      description: "Download unlimited Rednote videos with 99.9% uptime"
+      label: "Unlimited Free Downloads",
+      description: "Download unlimited Rednote videos online with 99.9% uptime"
     }
   ];
 
   const faqs = [
     {
-      question: "How to download videos from RedNote?",
-      answer: "Simply copy the RedNote video link, paste it here, and click Download. We'll process your request instantly and provide HD quality videos without watermarks."
+      question: "How to download videos from RedNote for free?",
+      answer: "Simply copy the RedNote video link, paste it in our free online downloader, and click Download. We'll process your request instantly and provide HD quality videos without watermarks."
     },
     {
-      question: "What video quality can I download?",
-      answer: "You can download Rednote videos in their original HD quality, completely free and without watermarks. We ensure the highest possible video quality."
+      question: "What video quality can I download from RedNote?",
+      answer: "Our free online tool lets you download Rednote videos in their original HD quality, completely free and without watermarks. We ensure the highest possible video quality for all downloads."
     },
     {
-      question: "Is it safe to download Rednote videos?",
-      answer: "Absolutely! We prioritize your security and privacy. Your video downloads are protected, and we don't store any of your data."
+      question: "Is it safe to use this free Rednote video downloader?",
+      answer: "Absolutely! Our free online Rednote video downloader prioritizes your security and privacy. Your video downloads are protected, and we don't store any of your data."
     },
     {
-      question: "Why choose our Rednote video downloader?",
-      answer: "We offer instant video downloads, HD quality, no watermarks, and completely free service. Our video downloader is fast, reliable, and available 24/7."
+      question: "Why choose our free Rednote video downloader?",
+      answer: "We offer instant video downloads, HD quality, no watermarks, and completely free online service. Our Rednote video downloader is fast, reliable, and available 24/7."
     },
     {
       question: "How to get API access for video downloads?",
-      answer: "We offer a paid API plan at $19.90 for 1,000 API calls with no expiration. Visit our purchase page at https://buy.stripe.com/4gw1584Hf8r6adOdQR. After payment, we'll send your API key to your email. For API documentation, visit https://api.rednotetoolsonline.com/docs"
+      answer: (
+        <>
+          We offer two API plans: Basic Plan at $9.90 for 600 API calls, and Pro Plan at $19.90 for 1,000 API calls, both with no expiration.{' '}
+          <Link href="/api" className="text-primary hover:underline">
+            Visit our API page
+          </Link>
+          {' '}for more details and to purchase. After payment, we'll send your API key to your email.
+        </>
+      )
     }
   ];
 
@@ -230,11 +238,11 @@ export default function Home() {
           {/* Header Section */}
           <div className="text-center space-y-4">
             <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-rose-600">
-              Rednote Video Download
+              Free Online Rednote Video Downloader
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Download HD videos from RedNote without watermark.
-              <span className="font-semibold text-foreground"> Fast, Free & Original Quality.</span>
+              The best free online tool to download HD videos from RedNote without watermark.
+              <span className="font-semibold text-foreground"> Fast, secure, and 100% free forever.</span>
             </p>
           </div>
 

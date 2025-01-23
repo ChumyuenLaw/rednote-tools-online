@@ -14,9 +14,9 @@ export const metadata: Metadata = {
       ? 'http://localhost:3000'
       : 'https://rednotetoolsonline.com'
   ),
-  title: 'Rednote Video Download - Download Videos Without Watermark | RedNote Tools',
-  description: 'Download Rednote videos in HD quality without watermark. Fast, secure, and reliable video downloader for RedNote. Get your videos in original quality for free.',
-  keywords: ['rednote video download', 'rednote downloader', 'download rednote videos', 'rednote video without watermark'],
+  title: 'Free Online Rednote Video Downloader - Download Without Watermark | RedNote Tools',
+  description: 'Free online Rednote video downloader - Download Rednote videos in HD quality without watermark. Fast, secure, and 100% free online tool for RedNote videos.',
+  keywords: ['rednote video downloader', 'free online rednote downloader', 'download rednote videos', 'rednote video without watermark', 'free rednote tools', 'online video downloader'],
   icons: {
     icon: [
       {
@@ -39,10 +39,10 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: 'Rednote Video Download - Download Videos Without Watermark',
-    description: 'Download Rednote videos in HD quality without watermark. Fast, secure, and reliable video downloader for RedNote.',
+    title: 'Free Online Rednote Video Downloader - Download Without Watermark',
+    description: 'Download Rednote videos in HD quality without watermark. Fast, secure, and 100% free online video downloader for RedNote.',
     url: 'https://rednotetoolsonline.com',
-    siteName: 'Rednote Video Downloader',
+    siteName: 'Free Rednote Video Downloader',
     images: [
       {
         url: '/og-image.png',
@@ -56,8 +56,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Rednote Video Download - HD Video Downloader',
-    description: 'Download Rednote videos in HD quality without watermark. Fast, secure, and reliable video downloader.',
+    title: 'Free Online Rednote Video Downloader - HD Quality',
+    description: 'Download Rednote videos in HD quality without watermark. Fast, secure, and 100% free online video downloader.',
     images: ['/og-image.png'],
   },
   robots: {

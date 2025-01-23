@@ -24,9 +24,6 @@ export default function Contact() {
               <Link href="/api" className="text-sm text-muted-foreground hover:text-foreground">
                 API
               </Link>
-              <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground">
-                Privacy
-              </Link>
               <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground">
                 Contact
               </Link>
