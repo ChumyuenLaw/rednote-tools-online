@@ -12,6 +12,7 @@ import { getCache, setCache, generateCacheKey } from '@/lib/cache';
 import Link from "next/link";
 import type { RednoteResponse } from '@/types/rednote';
 import { generateSign } from '@/lib/sign';
+import { notFound } from 'next/navigation';
 
 export default function Home() {
   const [url, setUrl] = useState('');
