@@ -159,45 +159,45 @@ export default function Home() {
   const features = [
     {
       icon: <Sparkles className="h-6 w-6" />,
-      label: "HD Quality",
-      description: "Download original quality content without watermarks"
+      label: "HD Video Quality",
+      description: "Download Rednote videos in original HD quality without watermarks"
     },
     {
       icon: <Zap className="h-6 w-6" />,
-      label: "Lightning Fast",
-      description: "Instant downloads with optimized processing"
+      label: "Fast Download",
+      description: "Instant video downloads with optimized processing speed"
     },
     {
       icon: <Lock className="h-6 w-6" />,
-      label: "Secure & Safe",
-      description: "Your data is protected and never stored"
+      label: "Secure Downloads",
+      description: "Your video downloads are protected and never stored"
     },
     {
       icon: <Infinity className="h-6 w-6" />,
-      label: "Reliable Service",
-      description: "Professional and stable service with 99.9% uptime"
+      label: "Unlimited Downloads",
+      description: "Download unlimited Rednote videos with 99.9% uptime"
     }
   ];
 
   const faqs = [
     {
-      question: "How to download from RedNote?",
-      answer: "Simply copy the RedNote link, paste it here, and click Download. We'll process your request instantly and provide HD quality content without watermarks."
+      question: "How to download videos from RedNote?",
+      answer: "Simply copy the RedNote video link, paste it here, and click Download. We'll process your request instantly and provide HD quality videos without watermarks."
     },
     {
-      question: "What can I download?",
-      answer: "You can download any public videos and images from RedNote in their original HD quality, completely free and without watermarks."
+      question: "What video quality can I download?",
+      answer: "You can download Rednote videos in their original HD quality, completely free and without watermarks. We ensure the highest possible video quality."
     },
     {
-      question: "Is it safe to use?",
-      answer: "Absolutely! We prioritize your security and privacy. We don't store any of your data and provide secure, direct downloads."
+      question: "Is it safe to download Rednote videos?",
+      answer: "Absolutely! We prioritize your security and privacy. Your video downloads are protected, and we don't store any of your data."
     },
     {
-      question: "Why choose our service?",
-      answer: "We offer instant downloads, HD quality, no watermarks, and completely free service. Our platform is fast, reliable, and available 24/7."
+      question: "Why choose our Rednote video downloader?",
+      answer: "We offer instant video downloads, HD quality, no watermarks, and completely free service. Our video downloader is fast, reliable, and available 24/7."
     },
     {
-      question: "How to get API access?",
+      question: "How to get API access for video downloads?",
       answer: "We offer a paid API plan at $19.90 for 1,000 API calls with no expiration. Visit our purchase page at https://buy.stripe.com/4gw1584Hf8r6adOdQR. After payment, we'll send your API key to your email. For API documentation, visit https://api.rednotetoolsonline.com/docs"
     }
   ];
@@ -216,8 +216,9 @@ export default function Home() {
               <Link href="/api" className="text-sm text-muted-foreground hover:text-foreground">
                 API
               </Link>
-              <a href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
-              <a href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Contact</a>
+              <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground">
+                Contact
+              </Link>
             </div>
           </div>
         </div>
@@ -228,11 +229,11 @@ export default function Home() {
           {/* Header Section */}
           <div className="text-center space-y-4">
             <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-rose-600">
-              RedNote HD Downloader
+              Rednote Video Download
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Download HD videos and images from RedNote without watermark.
-              <span className="font-semibold text-foreground"> Professional, Fast & Free.</span>
+              Download HD videos from RedNote without watermark.
+              <span className="font-semibold text-foreground"> Fast, Free & Original Quality.</span>
             </p>
           </div>
 

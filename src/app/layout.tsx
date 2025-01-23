@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
+import { Footer } from "@/components/footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -13,9 +14,9 @@ export const metadata: Metadata = {
       ? 'http://localhost:3000'
       : 'https://rednotetoolsonline.com'
   ),
-  title: 'Rednote - Videos and images downloader without watermark',
-  description: 'Download Rednote videos and images without watermarks. Fast, secure, and reliable. The best tool for saving content from Rednote.',
-  keywords: [],
+  title: 'Rednote Video Download - Download Videos Without Watermark | RedNote Tools',
+  description: 'Download Rednote videos in HD quality without watermark. Fast, secure, and reliable video downloader for RedNote. Get your videos in original quality for free.',
+  keywords: ['rednote video download', 'rednote downloader', 'download rednote videos', 'rednote video without watermark'],
   icons: {
     icon: [
       {
@@ -38,16 +39,16 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: 'RedNote - Videos and images downloader without watermark',
-    description: 'Download RedNote videos and images without watermarks. Fast, secure, and reliable.',
+    title: 'Rednote Video Download - Download Videos Without Watermark',
+    description: 'Download Rednote videos in HD quality without watermark. Fast, secure, and reliable video downloader for RedNote.',
     url: 'https://rednotetoolsonline.com',
-    siteName: 'Rednote Tools',
+    siteName: 'Rednote Video Downloader',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Rednote Tools - Content Downloader',
+        alt: 'Rednote Video Download Tool',
       },
     ],
     locale: 'en_US',
@@ -55,8 +56,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Rednote - Professional Content Downloader',
-    description: 'Download Rednote images and videos without watermarks. Fast, secure, and reliable.',
+    title: 'Rednote Video Download - HD Video Downloader',
+    description: 'Download Rednote videos in HD quality without watermark. Fast, secure, and reliable video downloader.',
     images: ['/og-image.png'],
   },
   robots: {
@@ -92,6 +93,13 @@ export default function RootLayout({
             })(window,document,'script','dataLayer','GTM-57C665G7');
           `}
         </Script>
+        <Script
+          id="google-adsense"
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7728179738255536"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
       </head>
       <body className={inter.className}>
         {/* Google Tag Manager (noscript) */}
@@ -104,7 +112,12 @@ export default function RootLayout({
           />
         </noscript>
         {/* End Google Tag Manager (noscript) */}
-        {children}
+        <div className="min-h-screen flex flex-col">
+          <div className="flex-1">
+            {children}
+          </div>
+          <Footer />
+        </div>
         <Toaster />
         <Analytics />
       </body>
