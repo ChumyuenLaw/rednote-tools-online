@@ -100,6 +100,20 @@ export default function RootLayout({
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
+        <Script
+          id="google-ads-conversion"
+          async
+          src="https://www.googletagmanager.com/gtag/js?id=AW-16807552157"
+          strategy="afterInteractive"
+        />
+        <Script id="google-ads-config" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'AW-16807552157');
+          `}
+        </Script>
       </head>
       <body className={inter.className}>
         {/* Google Tag Manager (noscript) */}
