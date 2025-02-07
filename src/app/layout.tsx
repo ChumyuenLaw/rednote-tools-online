@@ -112,6 +112,21 @@ export default function RootLayout({
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
             gtag('config', 'AW-16807552157');
+            gtag('event', 'conversion', {'send_to': 'AW-16807552157/1UlmCMis0ZoaEJ3Ju84-'});
+
+            // Conversion tracking function
+            window.gtag_report_conversion = function(url) {
+              var callback = function () {
+                if (typeof(url) != 'undefined') {
+                  window.location = url;
+                }
+              };
+              gtag('event', 'conversion', {
+                'send_to': 'AW-16807552157/1UlmCMis0ZoaEJ3Ju84-',
+                'event_callback': callback
+              });
+              return false;
+            }
           `}
         </Script>
       </head>
