@@ -1,52 +1,101 @@
 'use client';
 
 import { useEffect } from 'react';
-import { onCLS, onFID, onLCP, onFCP, onTTFB } from 'web-vitals';
+import { onCLS, onFID, onLCP, onFCP, onTTFB, onINP, Metric } from 'web-vitals';
 
-// 自定义 gtag 参数类型
+// Custom gtag parameter type
 interface WebVitalsEventParams {
   event_category: string;
   event_label: string;
   value: number;
   non_interaction: boolean;
+  metric_id: string;
+  metric_value: number;
+  metric_delta: number;
 }
 
-// 发送性能数据到 Google Analytics 或其他分析服务
-const sendToAnalytics = ({ name, delta, id }: { name: string, delta: number, id: string }) => {
-  // 如果有 Google Analytics
+// Enhanced metric type
+interface MetricWithAttribution extends Record<string, unknown> {
+  name: string;
+  value: number;
+  delta: number;
+  id: string;
+  navigationType?: string;
+  attribution?: {
+    element?: string;
+    largestShiftTarget?: string;
+    largestShiftTime?: number;
+    loadState?: string;
+  };
+}
+
+// Send performance data to Google Analytics or other analytics services
+const sendToAnalytics = (metric: Metric) => {
+  const { name, delta, id } = metric;
+  
+  // If Google Analytics is available
   const gtag = (window as any).gtag;
   if (typeof gtag === 'function') {
-    gtag('event', name, {
+    // Convert CLS values to milliseconds to match other metrics
+    const value = Math.round(name === 'CLS' ? delta * 1000 : delta);
+    
+    // Create a detailed event object for analytics
+    const eventParams: Record<string, any> = {
       event_category: 'Web Vitals',
       event_label: id,
-      value: Math.round(name === 'CLS' ? delta * 1000 : delta),
+      value: value,
       non_interaction: true,
-    });
+      metric_id: id,
+      metric_value: value,
+      metric_delta: delta,
+    };
+    
+    // Add any additional properties from the metric object
+    for (const key in metric) {
+      // Skip properties we've already handled
+      if (!['name', 'value', 'delta', 'id'].includes(key)) {
+        eventParams[`metric_${key}`] = (metric as Record<string, any>)[key];
+      }
+    }
+    
+    gtag('event', name, eventParams);
   }
   
-  // 记录到控制台（开发环境）
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`Web Vitals: ${name}`, { delta, id });
+  // Log to console in development or if debug parameter is present
+  if (process.env.NODE_ENV === 'development' || new URLSearchParams(window.location.search).has('debug')) {
+    console.log(`Web Vitals: ${name}`, metric);
   }
 };
 
 export function WebVitals() {
   useEffect(() => {
-    // 只在生产环境或明确启用时监控
+    // Only monitor in production or if explicitly enabled
     if (process.env.NODE_ENV !== 'development' || process.env.NEXT_PUBLIC_ENABLE_VITALS === 'true') {
-      // 核心 Web Vitals
-      onCLS(sendToAnalytics);  // 累积布局偏移
-      onFID(sendToAnalytics);  // 首次输入延迟
-      onLCP(sendToAnalytics);  // 最大内容绘制
+      // Core Web Vitals
+      onCLS(sendToAnalytics);  // Cumulative Layout Shift
+      onFID(sendToAnalytics);  // First Input Delay
+      onLCP(sendToAnalytics);  // Largest Contentful Paint
       
-      // 其他有用的指标
-      onFCP(sendToAnalytics);  // 首次内容绘制
-      onTTFB(sendToAnalytics); // 首字节时间
+      // Additional useful metrics
+      onFCP(sendToAnalytics);  // First Contentful Paint
+      onTTFB(sendToAnalytics); // Time to First Byte
+      onINP(sendToAnalytics);  // Interaction to Next Paint - important for mobile
+      
+      // Listen for page visibility changes to track engagement better
+      document.addEventListener('visibilitychange', () => {
+        if (typeof (window as any).gtag === 'function') {
+          (window as any).gtag('event', 'visibility_change', {
+            event_category: 'Page Visibility',
+            event_label: document.visibilityState,
+            non_interaction: true
+          });
+        }
+      });
     }
   }, []);
 
-  // 这是一个无渲染组件
+  // This is a non-rendering component
   return null;
 }
 
-// 不要为 gtag 添加全局类型，因为它已经在其他地方定义 
+// Do not add global type for gtag, as it is already defined elsewhere 

@@ -6,19 +6,21 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Sparkles, Zap, Lock, Infinity, ChevronDown, ChevronUp, Download, Copy, ExternalLink } from 'lucide-react';
 import { Logo } from '@/components/logo';
-import { RedNoteImage } from '@/components/RedNoteImage';
 import { isValidRednoteUrl, normalizeRednoteUrl, preloadResources } from '@/lib/api';
 import { getCache, setCache, generateCacheKey } from '@/lib/cache';
 import Link from "next/link";
 import type { RednoteResponse } from '@/types/rednote';
 import { generateSign } from '@/lib/sign';
-import { notFound } from 'next/navigation';
 import { debounce } from '@/lib/utils';
 
-// 拆分成独立组件
+// Lazy loaded components
+const ResultSection = lazy(() => import('@/components/ResultSection'));
+const HeroSection = lazy(() => import('@/components/home/HeroSection'));
+
+// Feature card component
 const FeatureCard = ({ icon, label, description }: { icon: React.ReactNode, label: string, description: string }) => (
   <div className="p-4 sm:p-6 rounded-lg border bg-card hover:shadow-md transition-shadow">
-    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+    <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
       <div className="text-primary">{icon}</div>
     </div>
     <h3 className="font-semibold mb-2 text-sm sm:text-base">{label}</h3>
@@ -26,6 +28,7 @@ const FeatureCard = ({ icon, label, description }: { icon: React.ReactNode, labe
   </div>
 );
 
+// FAQ item component
 const FaqItem = ({ 
   question, 
   answer, 
@@ -37,7 +40,7 @@ const FaqItem = ({
   isOpen: boolean, 
   onToggle: () => void 
 }) => (
-  <div className="border rounded-lg">
+  <div className="border rounded-lg overflow-hidden">
     <button
       className="w-full px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between hover:bg-muted/50 transition-colors text-left"
       onClick={onToggle}
@@ -51,17 +54,36 @@ const FaqItem = ({
       )}
     </button>
     {isOpen && (
-      <div className="px-4 py-3 sm:px-6 sm:py-4 text-muted-foreground text-sm">
+      <div className="px-4 py-3 sm:px-6 sm:py-4 text-muted-foreground text-sm border-t">
         {answer}
       </div>
     )}
   </div>
 );
 
-// 懒加载结果组件
-const ResultSection = lazy(() => import('@/components/ResultSection'));
+// Navigation component
+const Navigation = () => (
+  <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="flex justify-between items-center h-14 sm:h-16">
+        <Logo />
+        <div className="flex items-center space-x-4 sm:space-x-6">
+          <Link href="/" className="text-xs sm:text-sm font-medium text-foreground">
+            Home
+          </Link>
+          <Link href="/api" className="text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors">
+            API
+          </Link>
+          <Link href="/contact" className="text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Contact
+          </Link>
+        </div>
+      </div>
+    </div>
+  </nav>
+);
 
-// 特性和FAQ数据
+// Features and FAQs data
 const features = [
   {
     icon: <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />,
@@ -124,31 +146,32 @@ export default function Home() {
   const [inputFocused, setInputFocused] = useState(false);
   const { toast } = useToast();
 
-  // 检测移动设备
+  // Detect mobile device
   const [isMobile, setIsMobile] = useState(false);
   
   useEffect(() => {
-    setIsMobile(window.innerWidth < 768);
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
     
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
+    // Debounced resize handler for better performance
+    const handleResize = debounce(checkMobile, 200);
     window.addEventListener('resize', handleResize);
+    
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 预加载资源
+  // Preload resources
   useEffect(() => {
-    // 延迟预加载，优先处理首屏渲染
-    const timer = setTimeout(() => {
-      preloadResources();
-    }, 2000);
-    
-    return () => clearTimeout(timer);
+    // Use requestIdleCallback for better performance on initial load
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(() => preloadResources(), { timeout: 2000 });
+    } else {
+      // Fallback for browsers without requestIdleCallback
+      setTimeout(preloadResources, 2000);
+    }
   }, []);
 
-  // 使用 useCallback 优化事件处理函数
+  // Handle form submission
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url) return;
@@ -157,7 +180,7 @@ export default function Home() {
       setIsProcessing(true);
       setResult(null);
       
-      // 规范化 URL
+      // Normalize URL
       const normalizedUrl = normalizeRednoteUrl(url);
       
       if (!isValidRednoteUrl(normalizedUrl)) {
@@ -234,12 +257,13 @@ export default function Home() {
     }
   }, [url, toast]);
 
-  // 防抖处理 URL 输入
+  // Handle URL input with debounce
   const debouncedSetUrl = useMemo(
     () => debounce((value: string) => setUrl(value), 300),
     []
   );
 
+  // Handle copy action
   const handleCopy = useCallback((text: string) => {
     navigator.clipboard.writeText(text).then(() => {
       toast({
@@ -249,9 +273,10 @@ export default function Home() {
     });
   }, [toast]);
 
+  // Handle download action
   const handleDownload = useCallback(async (url: string, filename: string) => {
     try {
-      // 移动设备上显示下载开始提示
+      // Show download start toast on mobile
       if (isMobile) {
         toast({
           title: 'Download Starting',
@@ -271,23 +296,19 @@ export default function Home() {
         throw new Error('Download failed');
       }
 
-      // Get the blob from the response
+      // Get blob and create download
       const blob = await response.blob();
-      
-      // Create a temporary URL for the blob
       const blobUrl = window.URL.createObjectURL(blob);
-      
-      // Create a temporary link element
       const link = document.createElement('a');
       link.href = blobUrl;
       link.download = filename;
       
-      // Append to body, click, and clean up
+      // Perform download
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       
-      // 延迟释放 blob URL，确保移动设备有足够时间处理下载
+      // Clean up after download
       setTimeout(() => {
         window.URL.revokeObjectURL(blobUrl);
       }, 1000);
@@ -306,11 +327,12 @@ export default function Home() {
     }
   }, [toast, isMobile]);
 
+  // Toggle FAQ item
   const toggleFaq = useCallback((index: number) => {
     setOpenFaqIndex(current => current === index ? null : index);
   }, []);
 
-  // 使用 useMemo 优化渲染
+  // Memoized Feature section for better performance
   const renderedFeatures = useMemo(() => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-8 sm:mt-16">
       {features.map((feature, index) => (
@@ -324,6 +346,7 @@ export default function Home() {
     </div>
   ), []);
 
+  // Memoized FAQ section for better performance
   const renderedFaqs = useMemo(() => (
     <div className="mt-8 sm:mt-16 space-y-3 sm:space-y-4">
       <h2 className="text-2xl sm:text-3xl font-bold text-center mb-6 sm:mb-8">Frequently Asked Questions</h2>
@@ -339,66 +362,55 @@ export default function Home() {
     </div>
   ), [openFaqIndex, toggleFaq]);
 
+  // URL Input section
+  const urlInputSection = useMemo(() => (
+    <div className="mt-6 sm:mt-12 animate-in fade-in duration-500">
+      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-4">
+        <div className={`flex flex-col sm:flex-row gap-3 transition-all duration-200 ${inputFocused ? 'scale-[1.02]' : ''}`}>
+          <Input
+            type="text"
+            placeholder="Paste your RedNote link here..."
+            defaultValue={url}
+            onChange={(e) => debouncedSetUrl(e.target.value)}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
+            className="flex-1 h-12 text-base focus-visible:ring-red-500"
+            data-testid="url-input"
+          />
+          <Button 
+            type="submit" 
+            disabled={isProcessing || !url}
+            className="bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 transition-opacity h-12 px-6 font-medium"
+            data-testid="download-button"
+          >
+            {isProcessing ? 'Processing...' : 'Download HD'}
+          </Button>
+        </div>
+      </form>
+    </div>
+  ), [handleSubmit, url, isProcessing, inputFocused, debouncedSetUrl]);
+
   return (
     <>
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-14 sm:h-16">
-            <Logo />
-            <div className="flex items-center space-x-4 sm:space-x-6">
-              <Link href="/" className="text-xs sm:text-sm text-muted-foreground hover:text-foreground">
-                Home
-              </Link>
-              <Link href="/api" className="text-xs sm:text-sm text-muted-foreground hover:text-foreground">
-                API
-              </Link>
-              <Link href="/contact" className="text-xs sm:text-sm text-muted-foreground hover:text-foreground">
-                Contact
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navigation />
 
       <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 md:p-24 pt-20 sm:pt-24">
         <div className="max-w-5xl w-full space-y-6 sm:space-y-8">
-          {/* Header Section */}
-          <div className="text-center space-y-3 sm:space-y-4">
-            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-rose-600">
-              Free Online Rednote Video Downloader
-            </h1>
-            <p className="text-sm sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-              The best free online tool to download HD videos from RedNote without watermark.
-              <span className="font-semibold text-foreground"> Fast, secure, and 100% free forever.</span>
-            </p>
-          </div>
+          {/* Hero Section */}
+          <Suspense fallback={
+            <div className="text-center space-y-3 sm:space-y-4">
+              <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-rose-600">
+                Free Online Rednote Video Downloader
+              </h1>
+            </div>
+          }>
+            <HeroSection />
+          </Suspense>
 
           {/* URL Input Section */}
-          <div className="mt-6 sm:mt-12">
-            <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-4">
-              <div className={`flex flex-col sm:flex-row gap-3 transition-all duration-200 ${inputFocused ? 'scale-[1.02]' : ''}`}>
-                <Input
-                  type="text"
-                  placeholder="Paste your RedNote link here..."
-                  defaultValue={url}
-                  onChange={(e) => debouncedSetUrl(e.target.value)}
-                  onFocus={() => setInputFocused(true)}
-                  onBlur={() => setInputFocused(false)}
-                  className="flex-1"
-                />
-                <Button 
-                  type="submit" 
-                  disabled={isProcessing || !url}
-                  className="bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 transition-opacity"
-                >
-                  {isProcessing ? 'Processing...' : 'Download HD'}
-                </Button>
-              </div>
-            </form>
-          </div>
+          {urlInputSection}
 
-          {/* Results Section - 使用 Suspense 懒加载 */}
+          {/* Results Section - lazy loaded */}
           {result && (
             <Suspense fallback={
               <div className="w-full h-40 animate-pulse bg-card rounded-lg flex items-center justify-center">
