@@ -40,8 +40,11 @@ export function setCache<T>(key: string, data: T): void {
   // 限制内存缓存大小
   if (memoryCache.size > MEMORY_CACHE_SIZE) {
     // 删除最早添加的项
-    const firstKey = memoryCache.keys().next().value;
-    memoryCache.delete(firstKey);
+    const iterator = memoryCache.keys();
+    const firstResult = iterator.next();
+    if (!firstResult.done && firstResult.value) {
+      memoryCache.delete(firstResult.value);
+    }
   }
   
   // 再写入localStorage（如果可用）
