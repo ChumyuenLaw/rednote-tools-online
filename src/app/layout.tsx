@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Analytics } from "@vercel/analytics/react";
 import Script from "next/script";
 import { Footer } from "@/components/footer";
+import { WebVitals } from "@/components/WebVitals";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -149,6 +150,7 @@ export default function RootLayout({
         </div>
         <Toaster />
         <Analytics />
+        <WebVitals />
       </body>
     </html>
   );
