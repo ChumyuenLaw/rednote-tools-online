@@ -1,4 +1,5 @@
 import { Logo } from '@/components/logo';
+import Link from 'next/link';
 
 export default function CookiePolicy() {
   return (
@@ -7,6 +8,20 @@ export default function CookiePolicy() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Logo />
+            <div className="flex items-center space-x-6">
+              <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
+                Home
+              </Link>
+              <Link href="/api" className="text-sm text-muted-foreground hover:text-foreground">
+                API
+              </Link>
+              <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground">
+                Privacy
+              </Link>
+              <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground">
+                Contact
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
@@ -22,7 +37,7 @@ export default function CookiePolicy() {
 
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-4">How We Use Cookies</h2>
-            <p>At imageconvertfree.com, we use only essential cookies that are necessary for the website to function properly. We do not use any tracking or advertising cookies.</p>
+            <p>At rednotetoolsonline.com, we use only essential cookies that are necessary for the website to function properly. We do not use any tracking or advertising cookies.</p>
             
             <div className="mt-4">
               <h3 className="font-medium text-foreground mb-2">Essential Cookies:</h3>
@@ -56,7 +71,7 @@ export default function CookiePolicy() {
 
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-4">Contact Us</h2>
-            <p>If you have any questions about our Cookie Policy, please contact us at privacy@imageconvertfree.com</p>
+            <p>If you have any questions about our Cookie Policy, please contact us at dongd202306@gmail.com</p>
           </section>
         </div>
       </main>

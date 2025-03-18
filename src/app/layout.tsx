@@ -10,11 +10,7 @@ import { WebVitals } from "@/components/WebVitals";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NODE_ENV === 'development'
-      ? 'http://localhost:3000'
-      : 'https://rednotetoolsonline.com'
-  ),
+  metadataBase: new URL('https://rednotetoolsonline.com'),
   title: 'Free Online Rednote Video Downloader - Download Without Watermark | RedNote Tools',
   description: 'Free online Rednote video downloader - Download Rednote videos in HD quality without watermark. Fast, secure, and 100% free online tool for RedNote videos.',
   keywords: ['rednote video downloader', 'free online rednote downloader', 'download rednote videos', 'rednote video without watermark', 'free rednote tools', 'online video downloader'],
