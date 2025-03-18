@@ -315,14 +315,35 @@ export default function Home() {
   }, [toast]);
 
   // Handle download action
-  const handleDownload = useCallback((url: string, filename: string) => {
+  const handleDownload = useCallback(async (url: string, filename: string) => {
     try {
+      // Instead of direct download, use our proxy API endpoint
+      const response = await fetch('/api/rednote/download', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
+      }
+      
+      // Create a blob from the response
+      const blob = await response.blob();
+      
+      // Create a download link
+      const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
+      a.href = downloadUrl;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
+      
+      // Clean up
       document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error('Download error:', error);
       toast({

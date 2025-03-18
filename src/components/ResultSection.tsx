@@ -38,10 +38,41 @@ const ImageItem = memo(({
 
   // Memoized event handlers for better performance
   const onCopy = useCallback(() => handleCopy(imageUrl), [imageUrl, handleCopy]);
-  const onDownload = useCallback(() => 
-    handleDownload(imageUrl, `${title || 'image'}_${index + 1}.jpg`), 
-    [imageUrl, title, index, handleDownload]
-  );
+  const onDownload = useCallback(async () => {
+    try {
+      // Use the specific image download endpoint for better reliability
+      const response = await fetch('/api/rednote/download/image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: imageUrl }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to download image: ${response.status}`);
+      }
+      
+      // Get the blob and create object URL
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create download link and click it
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title || 'image'}_${index + 1}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Image download error:', error);
+      // Fall back to the original method if proxy fails
+      handleDownload(imageUrl, `${title || 'image'}_${index + 1}.jpg`);
+    }
+  }, [imageUrl, title, index, handleDownload]);
 
   return (
     <div ref={ref} className="space-y-2">
@@ -105,10 +136,41 @@ const VideoSection = memo(({
 }) => {
   // Memoized event handlers
   const onCopy = useCallback(() => handleCopy(videoUrl), [videoUrl, handleCopy]);
-  const onDownload = useCallback(() => 
-    handleDownload(videoUrl, `${title || 'video'}.mp4`), 
-    [videoUrl, title, handleDownload]
-  );
+  const onDownload = useCallback(async () => {
+    // Use the specific video download endpoint for better reliability
+    try {
+      const response = await fetch('/api/rednote/download/video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: videoUrl }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to download video: ${response.status}`);
+      }
+      
+      // Get the blob and create object URL
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create download link and click it
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title || 'video'}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Video download error:', error);
+      // Fall back to the original method if proxy fails
+      handleDownload(videoUrl, `${title || 'video'}.mp4`);
+    }
+  }, [videoUrl, title, handleDownload]);
 
   return (
     <div className="space-y-4">
@@ -222,14 +284,43 @@ const ImageGrid = memo(({
     
     // Batch download with delay to prevent overwhelming mobile browsers
     const batchSize = isMobile ? 2 : 8;
-    const downloadBatch = (startIndex: number) => {
+    const downloadBatch = async (startIndex: number) => {
       const endIndex = Math.min(startIndex + batchSize, images.length);
       
       for (let i = startIndex; i < endIndex; i++) {
-        handleDownload(
-          images[i],
-          `${title || 'image'}_${i + 1}.jpg`
-        );
+        try {
+          // Use the specific image download endpoint for better reliability
+          const response = await fetch('/api/rednote/download/image', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ url: images[i] }),
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Failed to download image: ${response.status}`);
+          }
+          
+          // Get the blob and create object URL
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          
+          // Create download link and click it
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${title || 'image'}_${i + 1}.jpg`;
+          document.body.appendChild(a);
+          a.click();
+          
+          // Clean up
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error('Image download error:', error);
+          // Fall back to the original method if proxy fails
+          handleDownload(images[i], `${title || 'image'}_${i + 1}.jpg`);
+        }
       }
       
       // If more images remain, schedule next batch

@@ -11,21 +11,35 @@ export async function POST(request: Request) {
       );
     }
 
-    // Download file through proxy
+    console.log('Attempting to download content from:', url);
+
+    // Download file through proxy with enhanced headers
     const downloadResponse = await fetch(url, {
       headers: {
-        'Accept': 'image/*, video/*',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Referer': 'https://www.xiaohongshu.com/'
-      }
+        'Accept': 'image/*, video/*, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        'Referer': 'https://www.xiaohongshu.com/',
+        'Origin': 'https://www.xiaohongshu.com',
+        'Sec-Fetch-Mode': 'no-cors',
+        'Sec-Fetch-Site': 'cross-site',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      },
+      referrerPolicy: 'unsafe-url',
+      cache: 'no-cache',
+      redirect: 'follow'
     });
 
     if (!downloadResponse.ok) {
-      throw new Error('Failed to download content');
+      console.error('Content download failed with status:', downloadResponse.status);
+      throw new Error(`Failed to download content: ${downloadResponse.status} ${downloadResponse.statusText}`);
     }
 
     const contentType = downloadResponse.headers.get('content-type');
     const blob = await downloadResponse.blob();
+
+    console.log('Downloaded content successfully, content-type:', contentType, 'size:', blob.size);
 
     // Determine content type and filename based on URL and response
     const isVideo = url.includes('.mp4') || contentType?.includes('video');
@@ -41,6 +55,9 @@ export async function POST(request: Request) {
       headers: {
         'Content-Type': finalContentType,
         'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
 
