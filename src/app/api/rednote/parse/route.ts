@@ -32,6 +32,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check if API key is properly configured
+    if (!API_KEY || API_KEY === '1234' || API_KEY === 'your_valid_api_key_here') {
+      console.error('Invalid API key configuration');
+      return NextResponse.json(
+        { 
+          error: 'API not properly configured', 
+          message: 'Please configure your API_KEY in .env.local file'
+        },
+        { status: 500 }
+      );
+    }
+
     // Process through new API
     const apiUrl = 'https://api.rednotetoolsonline.com/v1/api/rednote-downloader';
     console.log('Requesting API:', apiUrl);
@@ -49,6 +61,18 @@ export async function POST(request: Request) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('API response error:', errorText);
+      
+      // Check if this is an authorization error
+      if (response.status === 401) {
+        return NextResponse.json(
+          { 
+            error: 'API Authorization failed', 
+            message: 'Invalid API key. Please check your REDNOTE_API_KEY configuration.'
+          },
+          { status: 401 }
+        );
+      }
+      
       throw new Error(`API request failed: ${errorText}`);
     }
 

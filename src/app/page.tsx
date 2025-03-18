@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, Suspense, lazy } from 'react';
+import { useState, useCallback, useMemo, useEffect, Suspense, lazy, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Sparkles, Zap, Lock, Infinity, ChevronDown, ChevronUp, Download, Copy, ExternalLink } from 'lucide-react';
 import { Logo } from '@/components/logo';
-import { isValidRednoteUrl, normalizeRednoteUrl, preloadResources } from '@/lib/api';
+import { isValidRednoteUrl, normalizeRednoteUrl, preloadResources, extractRednoteUrl } from '@/lib/api';
 import { getCache, setCache, generateCacheKey } from '@/lib/cache';
 import Link from "next/link";
 import type { RednoteResponse } from '@/types/rednote';
@@ -16,6 +16,7 @@ import { debounce } from '@/lib/utils';
 // Lazy loaded components
 const ResultSection = lazy(() => import('@/components/ResultSection'));
 const HeroSection = lazy(() => import('@/components/home/HeroSection'));
+const UserGuideSection = lazy(() => import('@/components/home/UserGuideSection'));
 
 // Feature card component
 const FeatureCard = ({ icon, label, description }: { icon: React.ReactNode, label: string, description: string }) => (
@@ -149,6 +150,12 @@ export default function Home() {
   // Detect mobile device
   const [isMobile, setIsMobile] = useState(false);
   
+  // Add a new state to track text area height
+  const [textAreaHeight, setTextAreaHeight] = useState('56px');
+  
+  // Add a ref for the textarea element
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -180,20 +187,20 @@ export default function Home() {
       setIsProcessing(true);
       setResult(null);
       
-      // Normalize URL
-      const normalizedUrl = normalizeRednoteUrl(url);
+      // 从文本中提取链接，支持分享文本中的链接
+      const extractedUrl = extractRednoteUrl(url);
       
-      if (!isValidRednoteUrl(normalizedUrl)) {
+      if (!extractedUrl) {
         toast({
           variant: 'destructive',
-          title: 'Invalid URL',
-          description: 'Please enter a valid Rednote URL.',
+          title: 'No valid URL found',
+          description: 'Could not find a valid Rednote URL in your text. Please check and try again.',
         });
         return;
       }
 
       // Try to get from cache first
-      const cacheKey = generateCacheKey(normalizedUrl);
+      const cacheKey = generateCacheKey(extractedUrl);
       const cachedData = getCache<RednoteResponse>(cacheKey);
       
       if (cachedData) {
@@ -215,7 +222,7 @@ export default function Home() {
           'Content-Type': 'application/json',
           'X-Sign': sign,
         },
-        body: JSON.stringify({ url: normalizedUrl }),
+        body: JSON.stringify({ url: extractedUrl }),
       });
 
       if (!response.ok) {
@@ -257,75 +264,74 @@ export default function Home() {
     }
   }, [url, toast]);
 
-  // Handle URL input with debounce
-  const debouncedSetUrl = useMemo(
-    () => debounce((value: string) => setUrl(value), 300),
-    []
-  );
+  // Function to dynamically resize textarea
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setUrl(e.target.value);
+    resizeTextarea();
+  };
+
+  // Extract resizing logic to a separate function for reuse
+  const resizeTextarea = () => {
+    if (!textareaRef.current) return;
+    
+    // Reset height to auto first to get accurate scrollHeight
+    textareaRef.current.style.height = 'auto';
+    
+    // Add extra padding to prevent text from touching the bottom edge
+    const extraPadding = 8;
+    const newHeight = Math.max(textareaRef.current.scrollHeight + extraPadding, 56);
+    textareaRef.current.style.height = `${newHeight}px`;
+  };
+
+  // Resize on mount and when URL changes
+  useEffect(() => {
+    // Use setTimeout to ensure DOM has updated
+    setTimeout(resizeTextarea, 0);
+    
+    // Also add a resize observer for better responsiveness
+    if (textareaRef.current && window.ResizeObserver) {
+      const observer = new ResizeObserver(() => resizeTextarea());
+      observer.observe(textareaRef.current);
+      return () => observer.disconnect();
+    }
+  }, [url]);
 
   // Handle copy action
-  const handleCopy = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
+  const handleCopy = useCallback(async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
       toast({
         title: 'Copied!',
-        description: 'Link copied to clipboard.',
+        description: 'Content copied to clipboard.'
       });
-    });
+    } catch (error) {
+      console.error('Failed to copy:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Copy failed',
+        description: 'Please try again or copy manually.'
+      });
+    }
   }, [toast]);
 
   // Handle download action
-  const handleDownload = useCallback(async (url: string, filename: string) => {
+  const handleDownload = useCallback((url: string, filename: string) => {
     try {
-      // Show download start toast on mobile
-      if (isMobile) {
-        toast({
-          title: 'Download Starting',
-          description: 'Your download will begin shortly',
-        });
-      }
-      
-      const response = await fetch('/api/rednote/download', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Download failed');
-      }
-
-      // Get blob and create download
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = filename;
-      
-      // Perform download
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up after download
-      setTimeout(() => {
-        window.URL.revokeObjectURL(blobUrl);
-      }, 1000);
-
-      toast({
-        title: 'Download Started',
-        description: 'Your file will be downloaded shortly',
-      });
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     } catch (error) {
       console.error('Download error:', error);
       toast({
         variant: 'destructive',
-        title: 'Download Failed',
-        description: 'Please try again later',
+        title: 'Download failed',
+        description: 'Please try again or download manually.'
       });
     }
-  }, [toast, isMobile]);
+  }, [toast]);
 
   // Toggle FAQ item
   const toggleFaq = useCallback((index: number) => {
@@ -362,77 +368,135 @@ export default function Home() {
     </div>
   ), [openFaqIndex, toggleFaq]);
 
-  // URL Input section
-  const urlInputSection = useMemo(() => (
-    <div className="mt-6 sm:mt-12 animate-in fade-in duration-500">
-      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-4">
-        <div className={`flex flex-col sm:flex-row gap-3 transition-all duration-200 ${inputFocused ? 'scale-[1.02]' : ''}`}>
-          <Input
-            type="text"
-            placeholder="Paste your RedNote link here..."
-            defaultValue={url}
-            onChange={(e) => debouncedSetUrl(e.target.value)}
-            onFocus={() => setInputFocused(true)}
-            onBlur={() => setInputFocused(false)}
-            className="flex-1 h-12 text-base focus-visible:ring-red-500"
-            data-testid="url-input"
-          />
-          <Button 
-            type="submit" 
-            disabled={isProcessing || !url}
-            className="bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 transition-opacity h-12 px-6 font-medium"
-            data-testid="download-button"
-          >
-            {isProcessing ? 'Processing...' : 'Download HD'}
-          </Button>
-        </div>
-      </form>
-    </div>
-  ), [handleSubmit, url, isProcessing, inputFocused, debouncedSetUrl]);
-
   return (
     <>
       <Navigation />
-
-      <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 md:p-24 pt-20 sm:pt-24">
-        <div className="max-w-5xl w-full space-y-6 sm:space-y-8">
-          {/* Hero Section */}
-          <Suspense fallback={
-            <div className="text-center space-y-3 sm:space-y-4">
-              <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-500 to-rose-600">
-                Free Online Rednote Video Downloader
-              </h1>
-            </div>
-          }>
+      
+      <div className="pb-16 pt-24 sm:pt-32">
+        {/* Main container */}
+        <div className="container px-4 sm:px-6 max-w-7xl mx-auto space-y-12 sm:space-y-16">
+          
+          {/* Hero section */}
+          <Suspense fallback={<div className="text-center py-10">Loading...</div>}>
             <HeroSection />
           </Suspense>
-
-          {/* URL Input Section */}
-          {urlInputSection}
-
-          {/* Results Section - lazy loaded */}
-          {result && (
-            <Suspense fallback={
-              <div className="w-full h-40 animate-pulse bg-card rounded-lg flex items-center justify-center">
-                <p className="text-muted-foreground">Loading results...</p>
+          
+          {/* Input form */}
+          <div className="max-w-2xl mx-auto">
+            <form onSubmit={handleSubmit} className="relative">
+              <div className={`rounded-lg border ${
+                inputFocused ? 'ring-2 ring-red-400 border-red-400' : 'border-slate-200'
+              } shadow-sm transition-all overflow-hidden`}>
+                {/* Input Container */}
+                <div className="relative">
+                  <textarea
+                    ref={textareaRef}
+                    placeholder="Paste Rednote video link here..."
+                    className="w-full border-0 p-4 focus:outline-none focus:ring-0 resize-none text-sm sm:text-base leading-relaxed placeholder:text-slate-400"
+                    value={url}
+                    onChange={handleTextareaChange}
+                    onInput={(e) => {
+                      // Immediate resize on input for faster response
+                      setUrl((e.target as HTMLTextAreaElement).value);
+                      resizeTextarea();
+                    }}
+                    onFocus={() => setInputFocused(true)}
+                    onBlur={() => setInputFocused(false)}
+                    disabled={isProcessing}
+                    style={{
+                      minHeight: '56px',
+                      height: 'auto',
+                      overflow: 'hidden',
+                      transition: 'height 0.1s ease'
+                    }}
+                  />
+                  
+                  {/* Clear button */}
+                  {url && (
+                    <button
+                      type="button"
+                      className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100 transition-colors"
+                      onClick={() => {
+                        setUrl('');
+                        if (textareaRef.current) {
+                          textareaRef.current.style.height = '56px';
+                          textareaRef.current.focus();
+                        }
+                      }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="m15 9-6 6" />
+                        <path d="m9 9 6 6" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                
+                {/* Button */}
+                <div className="p-3 bg-slate-50 border-t border-slate-200">
+                  <Button 
+                    className="w-full bg-gradient-to-r from-red-500 to-rose-600 text-white hover:opacity-90 shadow-sm"
+                    type="submit"
+                    disabled={isProcessing || !url}
+                  >
+                    {isProcessing ? 
+                      <div className="flex items-center justify-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                      </div> : 'Download'
+                    }
+                  </Button>
+                </div>
               </div>
-            }>
+              <div className="mt-3 text-xs text-center text-slate-500">
+                By using our service, you agree to our{' '}
+                <Link href="/privacy" className="text-red-500 hover:underline">
+                  Privacy Policy
+                </Link>
+              </div>
+            </form>
+          </div>
+          
+          {/* Results section - Moved above UserGuideSection */}
+          {result && (
+            <Suspense fallback={<div className="text-center py-10">Loading results...</div>}>
               <ResultSection 
-                result={result} 
-                handleCopy={handleCopy} 
-                handleDownload={handleDownload} 
+                result={result}
+                handleCopy={handleCopy}
+                handleDownload={handleDownload}
                 isMobile={isMobile}
               />
             </Suspense>
           )}
-
-          {/* Features Section */}
-          {renderedFeatures}
-
+          
+          {/* User Guide Section */}
+          <Suspense fallback={<div className="text-center py-10">Loading...</div>}>
+            <UserGuideSection />
+          </Suspense>
+          
+          {/* Features section */}
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8">Why Choose Our Rednote Downloader</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {features.map((feature, index) => (
+                <FeatureCard 
+                  key={index}
+                  icon={feature.icon}
+                  label={feature.label}
+                  description={feature.description}
+                />
+              ))}
+            </div>
+          </div>
+          
           {/* FAQ Section */}
           {renderedFaqs}
         </div>
-      </main>
+      </div>
     </>
   );
 }

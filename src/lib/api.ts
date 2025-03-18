@@ -149,4 +149,35 @@ export function normalizeRednoteUrl(url: string): string {
   } catch {
     return url;
   }
+}
+
+/**
+ * 从文本中提取小红书链接
+ * 支持从分享文本中提取链接
+ */
+export function extractRednoteUrl(text: string): string {
+  if (!text) return '';
+  
+  // 首先检查是否已经是一个纯链接
+  if (isValidRednoteUrl(text)) {
+    return normalizeRednoteUrl(text);
+  }
+  
+  // 提取小红书短链接 (xhslink.com)
+  const xhsLinkRegex = /https?:\/\/xhslink\.com\/\S+/i;
+  const xhsLinkMatch = text.match(xhsLinkRegex);
+  if (xhsLinkMatch && xhsLinkMatch[0]) {
+    // 清理链接结尾可能的标点符号
+    return normalizeRednoteUrl(xhsLinkMatch[0].replace(/[,，。.?？!！\s]+$/, ''));
+  }
+  
+  // 提取标准小红书链接
+  const standardLinkRegex = /https?:\/\/(www\.)?xiaohongshu\.com\/\S+/i;
+  const standardLinkMatch = text.match(standardLinkRegex);
+  if (standardLinkMatch && standardLinkMatch[0]) {
+    // 清理链接结尾可能的标点符号
+    return normalizeRednoteUrl(standardLinkMatch[0].replace(/[,，。.?？!！\s]+$/, ''));
+  }
+  
+  return '';
 } 
