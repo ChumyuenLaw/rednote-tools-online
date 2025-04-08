@@ -139,12 +139,92 @@ const faqs = [
   }
 ];
 
+// History record type
+interface HistoryRecord {
+  url: string;
+  result: RednoteResponse;
+  timestamp: number;
+}
+
+// History section component
+const HistorySection = ({ 
+  history, 
+  onSelect,
+  onClear 
+}: { 
+  history: HistoryRecord[];
+  onSelect: (record: HistoryRecord) => void;
+  onClear: () => void;
+}) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+  
+  if (history.length === 0) return null;
+
+  // 清理标题中的话题标签
+  const cleanTitle = (title: string) => {
+    return title.split('||')[0].replace(/\[话题\]/g, '').replace(/#/g, '').trim();
+  };
+  
+  return (
+    <div className="mt-6 bg-slate-50 p-4 rounded-lg border border-slate-200">
+      <div className="flex items-center justify-between mb-3">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center text-sm font-medium hover:text-foreground transition-colors"
+        >
+          <ChevronDown className={`h-4 w-4 mr-2 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+          Recent Downloads ({history.length})
+        </button>
+        <button
+          onClick={onClear}
+          className="text-xs text-red-500 hover:text-red-600 transition-colors"
+        >
+          Clear History
+        </button>
+      </div>
+      
+      {isExpanded && (
+        <div className="space-y-2 animate-in slide-in-from-top-4 duration-200">
+          {history.map((record, index) => (
+            <div
+              key={index}
+              className="p-4 rounded-lg border bg-white hover:bg-slate-50 transition-colors cursor-pointer"
+              onClick={() => onSelect(record)}
+            >
+              <div className="flex items-center justify-between">
+                <div className="truncate flex-1">
+                  <p className="text-sm font-medium truncate">
+                    {cleanTitle(record.result.data?.title || 'Untitled')}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate mt-1">
+                    {record.url}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end ml-4">
+                  <p className="text-xs text-muted-foreground">
+                    {new Date(record.timestamp).toLocaleDateString()}
+                  </p>
+                  {record.result.data?.videoUrl && (
+                    <span className="text-xs text-red-500 mt-1">Video</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function Home() {
   const [url, setUrl] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<RednoteResponse | null>(null);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [inputFocused, setInputFocused] = useState(false);
+  const [history, setHistory] = useState<HistoryRecord[]>([]);
+  const [isExpanded, setIsExpanded] = useState(true);
   const { toast } = useToast();
 
   // Detect mobile device
@@ -178,6 +258,52 @@ export default function Home() {
     }
   }, []);
 
+  // Load history from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedHistory = localStorage.getItem('rednote_history');
+      if (savedHistory) {
+        const parsedHistory = JSON.parse(savedHistory);
+        setHistory(parsedHistory);
+        
+        // If there's history, show the most recent record's result, but don't fill the input
+        if (parsedHistory.length > 0) {
+          const mostRecent = parsedHistory[0];
+          setResult(mostRecent.result);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load history:', error);
+    }
+  }, []);
+
+  // Save history to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      if (history.length > 0) {
+        localStorage.setItem('rednote_history', JSON.stringify(history));
+      }
+    } catch (error) {
+      console.error('Failed to save history:', error);
+    }
+  }, [history]);
+
+  // Handle selecting a history record
+  const handleHistorySelect = useCallback((record: HistoryRecord) => {
+    // 只显示结果，不回填输入框
+    setResult(record.result);
+  }, []);
+
+  // Handle clearing history
+  const handleClearHistory = useCallback(() => {
+    setHistory([]);
+    localStorage.removeItem('rednote_history');
+    toast({
+      title: 'History Cleared',
+      description: 'Your download history has been cleared.'
+    });
+  }, [toast]);
+
   // Handle form submission
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,7 +313,7 @@ export default function Home() {
       setIsProcessing(true);
       setResult(null);
       
-      // 从文本中提取链接，支持分享文本中的链接
+      // Extract URL from text
       const extractedUrl = extractRednoteUrl(url);
       
       if (!extractedUrl) {
@@ -205,6 +331,15 @@ export default function Home() {
       
       if (cachedData) {
         setResult(cachedData);
+        // Add to history - 保持最新的记录在最前面，并且最多保存10条
+        const newHistory = [
+          { url: extractedUrl, result: cachedData, timestamp: Date.now() },
+          ...history.filter(item => item.url !== extractedUrl)
+        ].slice(0, 10);
+        
+        setHistory(newHistory);
+        localStorage.setItem('rednote_history', JSON.stringify(newHistory));
+        
         toast({
           title: 'Success!',
           description: 'Retrieved content from cache.',
@@ -243,9 +378,16 @@ export default function Home() {
       
       setResult(data);
       
-      // Only cache successful responses
-      if (data.status === "101" && data.code === "200") {
+      // Only cache and add to history for successful responses
+      if (data.status === "101") {
         setCache(cacheKey, data);
+        const newHistory = [
+          { url: extractedUrl, result: data, timestamp: Date.now() },
+          ...history.filter(item => item.url !== extractedUrl)
+        ].slice(0, 10);
+        
+        setHistory(newHistory);
+        localStorage.setItem('rednote_history', JSON.stringify(newHistory));
       }
       
       toast({
@@ -262,7 +404,7 @@ export default function Home() {
     } finally {
       setIsProcessing(false);
     }
-  }, [url, toast]);
+  }, [url, toast, history]);
 
   // Function to dynamically resize textarea
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -482,7 +624,7 @@ export default function Home() {
             </form>
           </div>
           
-          {/* Results section - Moved above UserGuideSection */}
+          {/* Results section */}
           {result && (
             <Suspense fallback={<div className="text-center py-10">Loading results...</div>}>
               <ResultSection 
@@ -493,6 +635,74 @@ export default function Home() {
               />
             </Suspense>
           )}
+
+          {/* History section */}
+          <div className="max-w-2xl mx-auto">
+            {history.length > 0 && (
+              <div className="mt-8 bg-gradient-to-r from-red-50 to-rose-50 p-4 rounded-lg border border-red-100">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex flex-col">
+                    <button
+                      onClick={() => setIsExpanded(!isExpanded)}
+                      className="flex items-center text-sm font-medium text-red-600 hover:text-red-700 transition-colors"
+                    >
+                      <ChevronDown className={`h-4 w-4 mr-2 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                      Recent Downloads ({history.length})
+                    </button>
+                    {isExpanded && (
+                      <p className="text-xs text-slate-500 mt-1 ml-6">Click any record to view details</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleClearHistory}
+                    className="text-xs text-red-500 hover:text-red-600 transition-colors"
+                  >
+                    Clear History
+                  </button>
+                </div>
+                
+                {isExpanded && (
+                  <div className="space-y-2 animate-in slide-in-from-top-4 duration-200">
+                    {history.map((record, index) => {
+                      // 清理标题中的话题标签
+                      const cleanTitle = record.result.data?.title
+                        ?.split('||')[0]
+                        ?.replace(/\[话题\]/g, '')
+                        ?.replace(/#/g, '')
+                        ?.trim() || 'Untitled';
+
+                      return (
+                        <div
+                          key={index}
+                          className="p-4 rounded-lg border bg-white hover:bg-red-50/50 transition-colors cursor-pointer"
+                          onClick={() => handleHistorySelect(record)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="truncate flex-1">
+                              <p className="text-sm font-medium truncate">
+                                {cleanTitle}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate mt-1">
+                                {record.url}
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-end ml-4">
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(record.timestamp).toLocaleDateString()}
+                              </p>
+                              {record.result.data?.videoUrl && (
+                                <span className="text-xs text-red-500 mt-1">Video</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           
           {/* User Guide Section */}
           <Suspense fallback={<div className="text-center py-10">Loading...</div>}>

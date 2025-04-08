@@ -1,0 +1,8 @@
+description: Best practices for internationalization with next-intl
+globs: **/*.{ts,tsx}
+---
+
+- Use the `useTranslations` hook for accessing translations in components
+- Implement proper locale detection and fallback strategies
+- Keep translation files organized and use the provided CLI for managing them
+- Utilize next-intl's formatting utilities for dates, numbers, and currencies 

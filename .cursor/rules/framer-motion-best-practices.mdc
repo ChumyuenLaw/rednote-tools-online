@@ -1,0 +1,8 @@
+description: Best practices for animations with Framer Motion
+globs: **/*.{ts,tsx}
+---
+
+- Use declarative animations with Framer Motion's API
+- Optimize performance by using `initial`, `animate`, and `exit` props
+- Implement responsive animations using Framer Motion's viewport and media query features
+- Use Framer Motion's gesture system for interactive animations 
